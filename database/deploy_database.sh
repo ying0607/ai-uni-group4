@@ -1,28 +1,24 @@
 #!/bin/bash
 # deploy_database.sh
 
-# 資料庫連線資訊
-DB_HOST="125.228.146.37"
-DB_PORT="3306"
-DB_USER="root"
-DB_PASS="aiuniversity"
-DB_NAME="113_2"
-
-# 部署結構 (使用 schema.sql)
-echo "部署資料庫結構..."
-mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p $DB_PASS < database/schema.sql
-
-# 執行遷移 (如果使用遷移工具)
-echo "執行資料庫遷移..."
-# 這裡可以加入遷移命令，如 alembic upgrade head
-
-# 載入種子資料 (可選，依據環境決定)
-if [ "$1" == "with-seeds" ]; then
-    echo "載入種子資料..."
-    for seed_file in database/seeds/*.sql; do
-        echo "載入: $seed_file"
-        mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS $DB_NAME < $seed_file
-    done
+# 載入 .env 檔案
+if [ -f "../.env" ]; then
+    export $(grep -v '^#' ../.env | xargs)
+else
+    echo ".env 檔案不存在，請確認路徑正確"
+    exit 1
 fi
 
-echo "資料庫部署完成"
+# 測試 MySQL 連線
+echo "正在測試資料庫連線..."
+mysqladmin ping -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS
+if [ $? -ne 0 ]; then
+    echo "無法連線到資料庫，請檢查連線資訊！"
+    exit 1
+fi
+echo "資料庫連線成功！"
+
+# 部署資料庫結構
+echo "正在部署資料庫結構..."
+mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS --verbose < ./schema.sql
+echo "資料庫結構部署完成！"
