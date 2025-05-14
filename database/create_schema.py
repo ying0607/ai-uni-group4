@@ -1,5 +1,5 @@
 import os
-import pymysql
+import pymysql # type: ignore
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
