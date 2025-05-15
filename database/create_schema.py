@@ -45,17 +45,17 @@ def create_database_schema():
               `recipe_id` varchar(50) NOT NULL COMMENT '產品編號',
               `recipe_name` varchar(100) NOT NULL COMMENT '產品名稱',
               `recipe_type` enum('G','F') NOT NULL COMMENT '配方類型',
-              `version` varchar(20) NOT NULL COMMENT '版本別',
+              `version` varchar(50) NOT NULL COMMENT '版本別',
               `standard_hours` varchar(50) COMMENT '標準工時',
               `specification` varchar(255) COMMENT '規格',
               `notes` text COMMENT '單據備註',
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '建立時間',
               `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間',
-              PRIMARY KEY (`recipe_id`),
-              INDEX `idx_recipe_type` (`recipe_type`)
+            PRIMARY KEY (`recipe_id`),
+            INDEX `idx_recipe_type` (`recipe_type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='配方主檔'
             """)
-            
+
             # 建立 MATERIALS 表格
             cursor.execute(f"""DROP TABLE IF EXISTS `{GROUP_PREFIX}materials`""")
             cursor.execute(f"""
@@ -81,19 +81,19 @@ def create_database_schema():
             cursor.execute(f"""DROP TABLE IF EXISTS `{GROUP_PREFIX}recipe_step`""")
             cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS `{GROUP_PREFIX}recipe_step` (
-              `step_id` int NOT NULL COMMENT '步驟唯一識別碼',
+              `step_id` varchar(20) NOT NULL COMMENT '步驟唯一識別碼',
               `recipe_id` varchar(50) NOT NULL COMMENT '所屬配方ID',
               `step_order` int NOT NULL COMMENT '步驟順序',
               `material_code` varchar(50) NOT NULL COMMENT '原料編號',
+              `material_name` varchar(100) NOT NULL COMMENT '原料名稱',
               `unit` varchar(20) COMMENT '單位',
-              `quantity` float NOT NULL DEFAULT 0 COMMENT '原料用量',
+              `quantity` float DEFAULT 0 COMMENT '原料用量',
               `product_base` float NOT NULL DEFAULT 1 COMMENT '產品基數',
               `notes` text COMMENT '附註',
               PRIMARY KEY (`step_id`),
               INDEX `idx_recipe_id` (`recipe_id`),
               INDEX `idx_material_code` (`material_code`),
-              CONSTRAINT `fk_step_bom` FOREIGN KEY (`recipe_id`) REFERENCES `{GROUP_PREFIX}bom` (`recipe_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-              CONSTRAINT `fk_step_material` FOREIGN KEY (`material_code`) REFERENCES `{GROUP_PREFIX}materials` (`material_code`) ON DELETE RESTRICT ON UPDATE CASCADE
+              CONSTRAINT `fk_step_bom` FOREIGN KEY (`recipe_id`) REFERENCES `{GROUP_PREFIX}bom` (`recipe_id`) ON DELETE CASCADE ON UPDATE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='配方步驟明細'
             """)
             

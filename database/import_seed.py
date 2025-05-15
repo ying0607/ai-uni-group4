@@ -33,6 +33,7 @@ try:
         '供應商號': 'supplier_id',
         '供應商': 'supplier_name'
     })
+    
     # 添加材料類型
     df_material_a['material_type'] = 'A'
     
@@ -48,6 +49,7 @@ try:
         '供應商號': 'supplier_id',
         '供應商': 'supplier_name'
     })
+    
     # 添加材料類型
     df_material_b['material_type'] = 'B'
     
@@ -69,6 +71,12 @@ try:
         '規格': 'specification',
         '單據備註': 'notes'
     })
+    
+    # 過濾掉多餘的欄位
+    df_g_bom = df_g_bom[[
+        'recipe_id', 'recipe_name', 'version', 'standard_hours','specification','notes'
+    ]]
+    
     # 添加配方類型
     df_g_bom['recipe_type'] = 'G'
     
@@ -82,6 +90,12 @@ try:
         '規格': 'specification',
         '單據備註': 'notes'
     })
+    
+    # 過濾掉多餘的欄位
+    df_f_bom = df_f_bom[[
+        'recipe_id', 'recipe_name', 'version', 'standard_hours','specification','notes'
+    ]]
+    
     # 添加配方類型
     df_f_bom['recipe_type'] = 'F'
     
@@ -106,6 +120,10 @@ try:
         '產品基數': 'product_base',
         '附註': 'notes'
     })
+    df_recipe_step_f = df_recipe_step_f[[
+        'recipe_id', 'step_id', 'step_order', 'material_code', 'material_name', 'unit',
+        'quantity', 'product_base', 'notes'
+    ]]
     
     df_recipe_step_g = pd.read_csv('seeds/recipe_step_g.csv')
     df_recipe_step_g = df_recipe_step_g.rename(columns={
@@ -119,6 +137,10 @@ try:
         '產品基數': 'product_base',
         '附註': 'notes'
     })
+    df_recipe_step_g = df_recipe_step_g[[
+        'recipe_id', 'step_id', 'step_order', 'material_code', 'material_name', 'unit',
+        'quantity', 'product_base', 'notes'
+    ]]
     
     # 合併 F 類和 G 類配方步驟到同一個表
     df_recipe_step = pd.concat([df_recipe_step_f, df_recipe_step_g])
