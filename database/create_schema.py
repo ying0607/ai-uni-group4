@@ -60,6 +60,7 @@ def create_database_schema():
             cursor.execute(f"""DROP TABLE IF EXISTS `{GROUP_PREFIX}materials`""")
             cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS `{GROUP_PREFIX}materials` (
+              `material_id` int NOT NULL AUTO_INCREMENT COMMENT '原料唯一識別碼',
               `material_code` varchar(50) NOT NULL COMMENT '貨品編號',
               `material_name` varchar(100) NOT NULL COMMENT '貨品名稱',
               `material_type` enum('A','B') NOT NULL COMMENT '材料類型(A一般/B管制)',
@@ -71,7 +72,7 @@ def create_database_schema():
               `supplier_name` varchar(100) COMMENT '供應商',
               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '建立時間',
               `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新時間',
-              PRIMARY KEY (`material_code`),
+              PRIMARY KEY (`material_id`),
               INDEX `idx_material_type` (`material_type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='原料主檔'
             """)

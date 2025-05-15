@@ -60,17 +60,17 @@ try:
 
     # 2. 匯入配方資料 (BOM)
     print("匯入配方資料...")
-    # df_g_bom = pd.read_csv('seeds/g_bom.csv')
-    # df_g_bom = df_g_bom.rename(columns={
-    #     '產品編號': 'recipe_id',
-    #     '產品名稱': 'recipe_name',
-    #     '版本別': 'version',
-    #     '標準工時': 'standard_hours',
-    #     '規格': 'specification',
-    #     '單據備註': 'notes'
-    # })
-    # # 添加配方類型
-    # df_g_bom['recipe_type'] = 'G'
+    df_g_bom = pd.read_csv('seeds/g_bom.csv')
+    df_g_bom = df_g_bom.rename(columns={
+        '產品編號': 'recipe_id',
+        '產品名稱': 'recipe_name',
+        '版本別': 'version',
+        '標準工時': 'standard_hours',
+        '規格': 'specification',
+        '單據備註': 'notes'
+    })
+    # 添加配方類型
+    df_g_bom['recipe_type'] = 'G'
     
     # 讀取 F 類配方數據 (如果有)
     df_f_bom = pd.read_csv('seeds/f_bom.csv')
@@ -86,8 +86,7 @@ try:
     df_f_bom['recipe_type'] = 'F'
     
     # 合併 G 類和 F 類配方到同一個表
-    # df_bom = pd.concat([df_g_bom, df_f_bom])
-    df_bom = df_f_bom
+    df_bom = pd.concat([df_g_bom, df_f_bom])
     
     # 寫入 BOM 表
     df_bom.to_sql(f'{GROUP_PREFIX}bom', con=engine, if_exists='append', index=False)
