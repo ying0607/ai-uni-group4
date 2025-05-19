@@ -1,5 +1,5 @@
 from langchain.tools import BaseTool
-from db_operations import search_materials, search_recipes, get_recipe_with_steps
+from database.db_operations import search_materials, search_recipes, get_recipe_with_steps
 
 class SearchMaterialsTool(BaseTool):
     name = "search_materials"
