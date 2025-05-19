@@ -2,15 +2,15 @@ import os
 import re
 import traceback
 from langchain.prompts import ChatPromptTemplate
-from langchain_ollama.llms import OllamaLLM
-from langchain_core.output_parsers import StrOutputParser
+from langchain_ollama.llms import OllamaLLM # type: ignore
+from langchain_core.output_parsers import StrOutputParser # type: ignore
 from dotenv import load_dotenv
-import jieba
+import jieba # type: ignore
 # 載入環境變數
 load_dotenv()
 
 MODEL_NAME = os.getenv("MODEL_NAME")
-SERVER_URL = os.getenv("SERVER_URL")  # 修正變數名稱拼寫錯誤
+SERVER_URL = os.getenv("SERVER_URL")  
 SIMPLIFIED_MD_FILENAME = os.getenv("SIMPLIFIED_MD_FILENAME")
 TARGET_DESCRIPTION_KEYWORDS=["結塊", "過篩", "順序", "吸濕", "稠度", "黏稠", "流動性"] # 仍可輔助識別，但搜尋主要靠原料
 CHINESE_STOP_WORDS={"的", "和", "與", "或", "了", "呢", "嗎", "喔", "啊", "關於", "有關", "請", "請問", " ", ""}

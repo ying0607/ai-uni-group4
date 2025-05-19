@@ -1,5 +1,20 @@
+import os
+from dotenv import load_dotenv
 from langchain.tools import BaseTool
+from langchain.agents import AgentType, initialize_agent
+from langchain.llms import OllamaLLM  # Import OllamaLLM
 from database.db_operations import search_materials, search_recipes, get_recipe_with_steps
+
+load_dotenv()
+
+MODEL_NAME = os.getenv("MODEL_NAME")
+SERVER_URL = os.getenv("SERVER_URL")  
+
+MODEL_NAME = "your_model_name_here"  # 定義模型名稱
+llm = OllamaLLM(
+    model=MODEL_NAME,   #  model名稱
+    base_url=SERVER_URL  # 修正變數名稱
+)
 
 class SearchMaterialsTool(BaseTool):
     name = "search_materials"

@@ -1,5 +1,5 @@
 import os
-import pymysql
+import pymysql # type: ignore
 from dotenv import load_dotenv
 
 # 載入環境變數
