@@ -1,22 +1,26 @@
 import os
+import re
 import traceback
 from langchain.prompts import ChatPromptTemplate
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+import jieba
 # 載入環境變數
 load_dotenv()
 
 MODEL_NAME = os.getenv("MODEL_NAME")
-SEVER_URL = os.getenv("SERVER")
+SERVER_URL = os.getenv("SERVER_URL")  # 修正變數名稱拼寫錯誤
 SIMPLIFIED_MD_FILENAME = os.getenv("SIMPLIFIED_MD_FILENAME")
-TARGET_DESCRIPTION_KEYWORDS = os.getenv("TARGET_DESCRIPTION_KEYWORDS")
-CHINESE_STOP_WORDS = os.getenv("CHINESE_STOP_WORDS")
-ALLOWED_WORKSHEET_IDENTIFIERS = os.getenv("ALLOWED_WORKSHEET_IDENTIFIERS")
+TARGET_DESCRIPTION_KEYWORDS=["結塊", "過篩", "順序", "吸濕", "稠度", "黏稠", "流動性"] # 仍可輔助識別，但搜尋主要靠原料
+CHINESE_STOP_WORDS={"的", "和", "與", "或", "了", "呢", "嗎", "喔", "啊", "關於", "有關", "請", "請問", " ", ""}
+ALLOWED_WORKSHEET_IDENTIFIERS=[
+    "工作表: 9", "工作表: 10"
+]
 
 llm = OllamaLLM(
     model=MODEL_NAME,   #  model名稱
-    base_url=SEVER_URL
+    base_url=SERVER_URL  # 修正變數名稱
 )
 
 # --- SOP 查詢相關函式 ---
@@ -98,6 +102,10 @@ def extract_keywords_rule_based(user_input, target_keywords=TARGET_DESCRIPTION_K
 def search_sections(sections_to_search, keywords):
     """在已過濾的區塊中初步篩選包含【原料名稱】關鍵字的工作表"""
     relevant_sections = []
+    if not keywords:  # 增加對 None 的檢查
+        print("ℹ️ 關鍵字對象為空，無法執行搜尋。")
+        return []
+        
     # *** 修改：只使用原料名稱進行初步搜尋 ***
     material_keywords = keywords.get("原料名稱", [])
     all_keywords = [kw for kw in material_keywords if kw and isinstance(kw, str)]
@@ -115,6 +123,10 @@ def search_sections(sections_to_search, keywords):
 # --- *** 修改：第一階段 LLM Prompt，強調小範圍、僅原料相關 *** ---
 def extract_relevant_text(llm, sections, keywords):
     """(第一階段 LLM) 使用極度聚焦的 Prompt 提取與指定【原料名稱】最直接相關的【小範圍文字片段】。"""
+    if not keywords:  # 增加對 None 的檢查
+        print("ℹ️ extract_relevant_text: 關鍵字對象為空。")
+        return []
+        
     material_names = keywords.get('原料名稱', [])
     if not material_names:
         print("ℹ️ extract_relevant_text: 查詢中未提供原料名稱。")
@@ -201,6 +213,9 @@ def extract_relevant_text(llm, sections, keywords):
 # --- *** 修改：第二階段 LLM Prompt，強調原文呈現、不修飾、統一列表 *** ---
 def synthesize_results(llm, keywords, extracted_texts):
     """(第二階段 LLM) 將提取出的【小範圍文字片段】整合成【極簡且原文呈現的統一格式列表】。"""
+    if not keywords:  # 增加對 None 的檢查
+        return "無效的關鍵字，無法整合結果。"
+        
     if not extracted_texts:
         return "未能提取到任何相關內容以供整合。"
 
@@ -329,8 +344,8 @@ def synthesize_results(llm, keywords, extracted_texts):
         # 如果清理後 response 變空，但 valid_extractions 有內容，說明 LLM 可能完全沒按指示輸出
         if not cleaned_response and valid_extractions:
              return f"已找到關於原料【{material_name}】的相關資訊片段，但無法按預期格式化呈現。請稍後重試。"
-
-
+         
+        print(f"   整合結果 (前100字): \"{cleaned_response[:100].replace(os.linesep, ' ')}...\"")
         return cleaned_response
 
     except Exception as e:
@@ -339,3 +354,37 @@ def synthesize_results(llm, keywords, extracted_texts):
         return "整合結果時發生嚴重錯誤，請檢查系統日誌。"
 # --- *** 函式結束 *** ---
 
+def main():
+    # 1. 載入 Markdown 檔案並過濾工作表
+    all_sections = load_markdown_sections()
+    filtered_sections = filter_sections_by_title(all_sections)
+    
+    if not filtered_sections:
+        print("⚠️ 未找到符合條件的工作表，請檢查ALLOWED_WORKSHEET_IDENTIFIERS設定或Markdown文件。")
+        return
+
+    # 2. 使用者輸入查詢關鍵字
+    user_input = input("請輸入查詢的原料名稱或特性描述：")
+    keywords = extract_keywords_rule_based(user_input)
+
+    if not keywords:
+        print("⚠️ 無法識別任何有效的原料名稱或特性描述，請檢查輸入。")
+        return
+
+    # 3. 在已過濾的區塊中搜尋關鍵字
+    relevant_sections = search_sections(filtered_sections, keywords)
+
+    if not relevant_sections:
+        print("⚠️ 在所有工作表中未找到與查詢相關的內容。")
+        return
+
+    # 4. 提取相關文本
+    extracted_texts = extract_relevant_text(llm, relevant_sections, keywords)
+
+    # 5. 整合結果
+    final_response = synthesize_results(llm, keywords, extracted_texts)
+    
+    print(f"\n🔄 最終整合結果：\n{final_response}")
+
+if __name__ == "__main__":
+    main()
