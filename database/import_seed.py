@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import os
 
@@ -19,7 +19,26 @@ connection_string = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{D
 engine = create_engine(connection_string)
 print("資料庫連接成功！")
 
-try:
+try:    
+    # 首先修改資料表結構，移除外鍵約束和觸發器
+    print("修改資料表結構，暫時移除外鍵約束和觸發器...")
+    
+    with engine.connect() as conn:
+        # 禁用外鍵檢查
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        
+        # 移除觸發器
+        try:
+            conn.execute(text(f"DROP TRIGGER IF EXISTS {GROUP_PREFIX}check_material_is_bom_recipe"))
+            print("已移除觸發器")
+        except Exception as e:
+            print(f"移除觸發器時發生錯誤: {e}")
+        
+        # 重新啟用外鍵檢查
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        
+        conn.commit()
+        
     # 1. 匯入材料資料 (整合 A 類和 B 類)
     print("匯入 A 類材料資料...")
     df_material_a = pd.read_csv('seeds/material_a.csv')
@@ -151,6 +170,43 @@ try:
     # 寫入 recipe_step 表
     df_recipe_step.to_sql(f'{GROUP_PREFIX}recipe_step', con=engine, if_exists='append', index=False)
     print(f"成功寫入 {len(df_recipe_step)} 筆配方步驟資料")
+    
+    # 創建觸發器
+    try:
+        conn.execute(text(f"""
+        CREATE TRIGGER {GROUP_PREFIX}check_material_is_bom_recipe 
+        BEFORE INSERT ON {GROUP_PREFIX}recipe_step
+        FOR EACH ROW
+        BEGIN
+            DECLARE material_exists INT DEFAULT 0;
+            
+            -- 檢查材料是否存在於 materials 表中
+            SELECT COUNT(*) INTO material_exists 
+            FROM {GROUP_PREFIX}materials 
+            WHERE material_code = NEW.material_code;
+            
+            -- 如果材料不存在但在 BOM 中存在，則拋出錯誤
+            IF material_exists = 0 THEN
+            -- 檢查是否為 BOM 中的配方
+            SELECT COUNT(*) INTO material_exists 
+            FROM {GROUP_PREFIX}bom 
+            WHERE recipe_id = NEW.material_code;
+            
+            IF material_exists = 0 THEN
+                SIGNAL SQLSTATE '45000' 
+                SET MESSAGE_TEXT = '錯誤：所指定的材料編號既不存在於 materials 表中，也不存在於 bom 表中';
+            END IF;
+            END IF;
+        END
+        """))
+        print("已創建觸發器")
+    except Exception as e:
+        print(f"創建觸發器時發生錯誤: {e}")
+        
+        # 重新啟用外鍵檢查
+        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        
+        conn.commit()
 
     print("所有資料匯入完成！")
 
