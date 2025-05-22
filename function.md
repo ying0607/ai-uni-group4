@@ -16,7 +16,7 @@
 - **Example**:
   ```python
   result = bot2(param1)
-
+  ```
 
 
 
@@ -38,3 +38,4 @@
 - **Example**:
   ```python
   result = function_name(param2)
+  ```
