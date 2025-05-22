@@ -1,19 +1,40 @@
-## Function: function_name
+## Function: bot2
 
 - **Purpose**:  
-  說明這個函式是做什麼的（功能/邏輯簡介）
+  從檔案中找到與輸入相關的SOP
+
+- **Input Parameters**:
+  | Name       | Type    | Description              |
+  |------------|---------|--------------------------|
+  | param1     | String  | 想要查詢的原料名稱        |
+
+- **Returns**:
+  | Type       | Description                        |
+  |------------|------------------------------------|
+  | String     | 跟輸入的原料名稱相關的SOP            |
+
+- **Example**:
+  ```python
+  result = bot2(param1)
+
+
+
+
+  ## Function: function_name
+
+- **Purpose**:  
+  從檔案中找到與輸入相關的產品名稱
 
 - **Input Parameters**:
   | Name       | Type    | Description               |
   |------------|---------|---------------------------|
-  | param1     | type    | 描述這個參數的用途        |
-  | param2     | type    | 描述這個參數的用途        |
+  | param2     | String  | 與產品名稱相關的關鍵字      |
 
 - **Returns**:
   | Type       | Description                       |
-  |------------|------------------------------------|
-  | returnType | 描述這個函式會回傳什麼資料與格式   |
+  |------------|-----------------------------------|
+  | String     | 與輸入相關的產品名稱                |
 
 - **Example**:
   ```python
-  result = function_name(param1, param2)
+  result = function_name(param2)
