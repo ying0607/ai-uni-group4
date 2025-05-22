@@ -26,6 +26,10 @@
 
 - **Purpose**:  
   從檔案中找到與輸入相關的產品名稱
+  
+- **note**:
+  有使用到 GBOM_product_data_name_20250522
+
 
 - **Input Parameters**:
   | Name       | Type    | Description               |
