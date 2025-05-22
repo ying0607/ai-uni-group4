@@ -1,1 +1,1 @@
-# ai-uni-group4
+# AI-UNI-GROUP4: AI-Powered Manufacturing Management System

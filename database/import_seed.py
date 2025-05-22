@@ -137,11 +137,12 @@ try:
         '單位': 'unit',
         '原料用量': 'quantity',
         '產品基數': 'product_base',
-        '附註': 'notes'
+        '附註': 'notes',
+        '建檔日期': 'created_at'
     })
     df_recipe_step_f = df_recipe_step_f[[
         'recipe_id', 'step_id', 'step_order', 'material_code', 'material_name', 'unit',
-        'quantity', 'product_base', 'notes'
+        'quantity', 'product_base', 'notes', 'created_at'
     ]]
     
     df_recipe_step_g = pd.read_csv('seeds/recipe_step_g.csv')
@@ -154,11 +155,12 @@ try:
         '單位': 'unit',
         '原料用量': 'quantity',
         '產品基數': 'product_base',
-        '附註': 'notes'
+        '附註': 'notes',
+        '建檔日期': 'created_at'
     })
     df_recipe_step_g = df_recipe_step_g[[
         'recipe_id', 'step_id', 'step_order', 'material_code', 'material_name', 'unit',
-        'quantity', 'product_base', 'notes'
+        'quantity', 'product_base', 'notes', 'created_at'
     ]]
     
     # 合併 F 類和 G 類配方步驟到同一個表

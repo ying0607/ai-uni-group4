@@ -90,6 +90,7 @@ def create_database_schema():
               `quantity` float DEFAULT 0 COMMENT '原料用量',
               `product_base` float NOT NULL DEFAULT 1 COMMENT '產品基數',
               `notes` text COMMENT '附註',
+              
               PRIMARY KEY (`step_id`),
               INDEX `idx_recipe_id` (`recipe_id`),
               INDEX `idx_material_code` (`material_code`),
