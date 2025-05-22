@@ -2,6 +2,8 @@
 
 - **Purpose**:  
   從檔案中找到與輸入相關的SOP
+- **note**:
+  有使用到 simplified_output_by_section.md
 
 - **Input Parameters**:
   | Name       | Type    | Description              |
