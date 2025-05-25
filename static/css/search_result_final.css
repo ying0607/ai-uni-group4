@@ -205,10 +205,27 @@
     padding-bottom: 8px;
 }
 
+
 .detail-info p {
     color: #333;
     line-height: 1.6;
     margin: 0;
+}
+
+.detail-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+}
+
+.detail-list li:last-child {
+    border-bottom: none;
+}
+
+.cost-highlight {
+    color: #28a745 !important;
+    font-weight: bold !important;
 }
 
 /* 關閉按鈕樣式 */

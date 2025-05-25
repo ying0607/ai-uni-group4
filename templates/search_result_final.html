@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>佳實食品_小江解AI配方系统</title>
-    <link rel="icon" href="/static/image/favicon.png" type="image/png">
+
     <link rel="stylesheet" href="/static/css/search.css">
     <link rel="stylesheet" href="/static/css/search_result_final.css"> 
     <link rel="stylesheet" href="/static/css/item_details.css"> 
+
     <script src="/static/JS/search.js" defer></script>
     <script src="/static/JS/search_result_final.js" defer></script>
 </head>
@@ -18,7 +19,7 @@
         <div class="sidebar-header">
             <!-- 佳質LOGO IMG -->
             <div class="logo-container">
-                <img src="../static/image/logo-1.png" alt="VALUE!" class="logo" id="logo">
+                <img src="/static/image/logo-1.png" alt="VALUE!" class="logo" id="logo">
             </div>
             <div class="sidebar-icons">
                 <!-- SideBar 搜尋功能 -->
@@ -181,28 +182,27 @@
             <div class="search-results">
                 <h2 class="results-title">搜索結果</h2>
             
-            <div class="recipe-details" id="recipe-details">
-                
-                <div class="recipe-details-line">產品編號: <span id="product-code">載入中...</span></div>
-                <div class="recipe-details-line">產品名稱: <span id="product-code">載入中...</span></div>
-                <div class="recipe-details-line">版本別: <span id="version">載入中...</span></div>
-                <div class="recipe-details-line">標準工時: <span id="standard-time">載入中...</span></div>
-                <div class="recipe-details-line">規格: <span id="specification">載入中...</span></div>
-                <div class="recipe-details-line">單據編註: <span id="document-note">載入中...</span></div>
-                <div class="recipe-details-date">製表日期: <span id="create-date">載入中...</span></div>
-            </div>
+                <div class="recipe-details" id="recipe-details">
+                    
+                    <div class="recipe-details-line"><strong>產品編號: </strong><span id="product-code"></span></div>
+                    <div class="recipe-details-line"><strong>產品名稱: </strong><span id="product-name"></span></div>
+                    <div class="recipe-details-line"><strong>版本別: </strong><span id="version"></span></div>
+                    <div class="recipe-details-line"><strong>標準工時: </strong><span id="standard-time"></span></div>
+                    <div class="recipe-details-line"><strong>規格: </strong><span id="specification"></span></div>
+                    <div class="recipe-details-line"><strong>單據編註: </strong><span id="document-note"></span></div>
+                    <div class="recipe-details-date"><strong>製表日期: </strong><span id="create-date"></span></div>
+                </div>
             
-                
                 <!--配方表-->
                 <table class="ingredients-table">
                     <thead>
                         <tr>
-                            <th>序號</th>
+                            <th>步驟</th>
                             <th>原料編號</th>
                             <th>原料名稱</th>
                             <th>單位</th>
                             <th>原料用量</th>
-                            <th>產品數量</th>
+                            <th>產品基數</th>
                             <th>附註</th>
                             <th>單價未稅</th>
                             <th>成本</th>
@@ -212,42 +212,57 @@
                         <!--JS 自動新增欄位-->
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <th colspan="8">總成本</th>
+                            <th id="total-cost">$0.00</th>
+                        </tr>
+                    </tfoot>
                 </table>
-
-            <!-- 注意事項區段 -->
-            <div class="notice-section">
-                <div class="notice-title">📋 注意事項</div>
-                <div class="notice-content">
-                    <ul>
-                        <li>請確保所有原料在使用前已通過品質檢驗</li>
-                        <li>混合時間需嚴格按照配方執行，不可任意縮短或延長</li>
-                        <li>篩選原料時請使用指定規格的篩網</li>
-                        <li>溫度控制需保持在規定範圍內，避免影響產品品質</li>
-                        <li>如發現原料異常，請立即停止生產並通知品管部門</li>
-                        <li>生產過程中請保持設備清潔，避免交叉污染</li>
-                        <li>成本計算僅供參考，實際成本可能因市場價格波動而有所差異</li>
-                    </ul>
+            
+            
+                <!-- 注意事項區段 -->
+                <div class="notice-section">
+                    <div class="notice-title">📋 注意事項</div>
+                        <div class="notice-content">
+                            <ul>
+                                <li><!--js新增--></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        </div>
-    </div>
 
+    </div>
+    
     <!-- 詳細資料側邊視窗 -->
     <div class="detail-panel" id="detailPanel">
         <div class="detail-content">
             <div class="detail-title" id="detailTitle">詳細資訊</div>
-            <div class="detail-info">
-                <h4>原料基本資料</h4>
-				<p><!--JS回傳--> </p>
+            <div class="detail-info ">
+                <ul class="detail-list" id="detailList">
+                    <li><strong>步驟：</strong><span id="detail-step"></span></li>
+                    <li><strong>原料編號：</strong><span id="detail-code"></span></li>
+                    <li><strong>原料名稱：</strong><span id="detail-name"></span></li>
+                    <li><strong>單位：</strong><span id="detail-unit"></span></li>
+                    <li><strong>原料用量：</strong><span id="detail-quantity"></span></li>
+                    <li><strong>產品基數：</strong><span id="detail-base"></span></li>
+                    <li><strong>附註：</strong><span id="detail-notes"></span></li>
+                    <li><strong>單價未稅：</strong><span id="detail-price"></span></li>
+                    <li><strong>成本：</strong><span id="detail-cost" class="cost-highlight"></span></li>
+                </ul>
             </div>
-            <div class="detail-info">
+            <div class="detail-info ">
                 <h4>原料特性</h4>
-				<p><!--JS回傳--> </p>
+				<p id="more-info">
+
+                </p>
             </div>
 			<button class="close-btn" onclick="closeDetailPanel()">關閉</button>
         </div>
     </div>
+    
     <!-- 進階搜尋 -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
         <div class="modal" onclick="event.stopPropagation()">

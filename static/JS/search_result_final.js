@@ -4,6 +4,7 @@ class IngredientsTableController {
         this.table = document.querySelector(tableSelector);
         this.thead = this.table.querySelector('thead tr');
         this.tbody = this.table.querySelector('tbody') || this.createTbody();
+        this.tfoot = this.table.querySelector('tfoot') || this.createTfoot();
         
         // 取得現有的表頭欄位
         this.columns = this.getExistingColumns();
@@ -18,6 +19,18 @@ class IngredientsTableController {
         return tbody;
     }
 
+    createTfoot() {
+        const tfoot = document.createElement('tfoot');
+        tfoot.innerHTML = `
+            <tr class="total-row">
+                <th colspan="8">總成本</th>
+                <th id="total-cost">$0.00</th>
+            </tr>
+        `;
+        this.table.appendChild(tfoot);
+        return tfoot;
+    }
+
     // 取得現有表頭的欄位配置
     getExistingColumns() {
         const ths = this.thead.querySelectorAll('th');
@@ -29,16 +42,91 @@ class IngredientsTableController {
 
     // 初始化點擊事件
     initClickEvents() {
-        // 使用事件委託，監聽表格點擊事件
-        this.tbody.addEventListener('click', (e) => {
-            const row = e.target.closest('tr');
-            if (row) {
-                const materialCode = row.getAttribute('data-material-code');
-                if (materialCode) {
-                    this.showDetailPanel(materialCode, row);
+    this.tbody.addEventListener('click', (e) => {
+        const row = e.target.closest('tr');
+        if (row && !row.classList.contains('sub-recipe-row')) {  // 🔥 排除半成品行
+            const materialCode = row.getAttribute('data-material-code');
+            if (materialCode) {
+                this.showDetailPanel(materialCode, row);
+            }
+        }
+    });
+}
+
+    // 處理後端資料
+    loadRecipeData(recipeId) {
+        if (!recipeId) {
+            console.error('Recipe ID not provided');
+            return;
+        }
+
+        // 顯示載入狀態
+        this.showLoading();
+
+        // 從後端獲取配方詳細資料
+        fetch(`/api/recipe/${recipeId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                return response.json();
+            })
+            .then(data => {
+                this.updateRecipeDetails(data.recipe_details);
+                this.addDataRows(data.ingredients);
+                this.updateTotalCost(data.total_cost);
+            })
+            .catch(error => {
+                console.error('Error loading recipe data:', error);
+                this.showError('載入配方資料時發生錯誤: ' + error.message);
+            });
+    }
+
+    // 更新配方詳細資料
+    updateRecipeDetails(recipeDetails) {
+        const updates = {
+            'product-code': recipeDetails.recipe_id,
+            'product-name': recipeDetails.recipe_name,
+            'version': recipeDetails.version || 'N/A',
+            'standard-hours': recipeDetails.standard_hours || 'N/A',
+            'specification': recipeDetails.specification || 'N/A',
+            'document-note': recipeDetails.notes || 'N/A',
+            'create-date': recipeDetails.created_at || 'N/A'
+        };
+
+        Object.entries(updates).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
             }
         });
+    }
+
+    // 更新總成本
+    updateTotalCost(totalCost) {
+        const totalElement = document.getElementById('total-cost');
+        if (totalElement) {
+            totalElement.textContent = `$${totalCost.toFixed(2)}`;
+        }
+    }
+
+    // 顯示載入狀態
+    showLoading() {
+        this.tbody.innerHTML = '<tr class="loading"><td colspan="9">載入中...</td></tr>';
+        
+        // 更新配方詳細資料為載入中
+        ['product-code', 'product-name', 'version', 'standard-hours', 
+         'specification', 'document-note', 'create-date'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = '載入中...';
+            }
+        });
+    }
+
+    // 顯示錯誤
+    showError(message) {
+        this.tbody.innerHTML = `<tr class="error"><td colspan="9" style="text-align: center; color: #ff4444;">${message}</td></tr>`;
     }
 
     // 處理後端資料，只新增資料列
@@ -60,24 +148,40 @@ class IngredientsTableController {
     // 新增單一資料列
     addRow(item, index = 0) {
         const row = document.createElement('tr');
-        
-        // 設置資料屬性和可點擊樣式
         row.setAttribute('data-material-code', item.material_code || '');
         row.classList.add('clickable-row');
         
-        // 根據原料編號設置背景色
-        if (item.material_code) {
-            if (item.material_code.startsWith('F')) {
-                row.setAttribute('data-code', item.material_code);
-            } else if (item.material_code.startsWith('M')) {
-                row.setAttribute('data-code', item.material_code);
-            }
+        // 🔥 如果是半成品，添加特殊標記和點擊處理
+        if (item.is_sub_recipe) {
+            row.classList.add('sub-recipe-row');
+            row.setAttribute('data-sub-recipe', item.material_code);
+            
+            // 🔥 為半成品行添加特殊點擊事件
+            row.addEventListener('click', (e) => {
+                e.stopPropagation(); // 防止觸發一般的詳細面板
+                window.location.href = `/search/result/final/${item.material_code}`;
+            });
         }
         
-        // 根據現有表頭順序建立儲存格
+        row.dataset.materialData = JSON.stringify(item);
+        
+        const materialCode = item.material_code || '';
+        if (materialCode && (materialCode.startsWith('F') || materialCode.startsWith('M'))) {
+            row.setAttribute('data-code', materialCode);
+        }
+        
         this.columns.forEach(column => {
             const td = document.createElement('td');
-            td.textContent = this.getCellValue(column.title, item, index);
+            const cellValue = this.getCellValue(column.title, item, index);
+            
+            if (column.title === '原料名稱' && item.is_sub_recipe) {
+                td.innerHTML = `${cellValue} `;
+                td.style.cursor = 'pointer';
+                td.style.fontWeight = '500';
+            } else {
+                td.textContent = cellValue;
+            }
+            
             row.appendChild(td);
         });
         
@@ -87,7 +191,7 @@ class IngredientsTableController {
     // 根據欄位標題取得對應的資料值
     getCellValue(columnTitle, item, index) {
         switch(columnTitle) {
-            case '序號':
+            case '步驟':
                 return index + 1;
             case '原料編號':
                 return item.material_code || '';
@@ -96,19 +200,15 @@ class IngredientsTableController {
             case '單位':
                 return item.unit || '';
             case '原料用量':
-                return item.quantity || '';
-            case '產品數量':
-                return item.product_base || '';
+                return item.quantity ? parseFloat(item.quantity).toString() : '';
+            case '產品基數':
+                return item.product_base ? parseFloat(item.product_base).toString() : '';
             case '附註':
                 return item.notes || '';
             case '單價未稅':
-                return item.unit_price || '';
+                return item.unit_price ? `$${parseFloat(item.unit_price).toFixed(2)}` : '$0.00';
             case '成本':
-                // 計算成本：用量 × 單價
-                if (item.quantity && item.unit_price) {
-                    return (parseFloat(item.quantity) * parseFloat(item.unit_price)).toFixed(2);
-                }
-                return '';
+                return item.cost ? `$${parseFloat(item.cost).toFixed(2)}` : '$0.00';
             default:
                 return '';
         }
@@ -116,25 +216,69 @@ class IngredientsTableController {
 
     // 顯示詳細面板
     showDetailPanel(materialCode, row) {
-        // 從當前資料中找到對應的原料資訊
-        const materialData = this.findMaterialData(materialCode);
+        const cells = row.querySelectorAll('td');
         
-        if (!materialData) {
-            console.warn('找不到原料資料:', materialCode);
-            return;
+        // 取得完整資料
+        let itemData = {};
+        try {
+            itemData = JSON.parse(row.dataset.materialData);
+        } catch (e) {
+            console.warn('無法解析完整資料');
         }
-
-        // 更新詳細面板內容
-        this.updateDetailPanelContent(materialData);
         
-        // 顯示詳細面板
-        this.openDetailPanel();
+        // 更新標題
+        document.getElementById('detailTitle').textContent = 
+            `${cells[2]?.textContent} (${cells[1]?.textContent})`;
+        
+        // 更新基本資料欄位
+        const updates = {
+            'detail-step': cells[0]?.textContent || '',
+            'detail-code': cells[1]?.textContent || '',
+            'detail-name': cells[2]?.textContent || '',
+            'detail-unit': cells[3]?.textContent || '',
+            'detail-quantity': cells[4]?.textContent || '',
+            'detail-base': cells[5]?.textContent || '',
+            'detail-notes': cells[6]?.textContent || '無',
+            'detail-price': cells[7]?.textContent || '',
+            'detail-cost': cells[8]?.textContent || ''
+        };
+        
+        Object.entries(updates).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+        
+        // 🔥 更新原料特性
+        const characteristicElement = document.getElementById('more-info');
+            if (characteristicElement) {
+                const characteristic = itemData.characteristic || '暫無特性資料';
+                characteristicElement.textContent = characteristic;
+
+                const keywords = ['標示', '過敏原', '特性','甜度', '顆粒', '溶解性', '食品添加物'];
+                let formattedText = characteristic;
+
+                keywords.forEach(keyword => {
+                    const regex = new RegExp(`(${keyword}[:：]\\s*)`, 'g');
+                    formattedText = formattedText.replace(regex, '<br>$1');
+                });
+
+                formattedText = formattedText
+                    .replace(/^<br>/, '')  // 移除開頭換行
+                    .replace(/<br>\s*<br>/g, '<br>')  // 移除重複換行
+                    .trim();
+
+                characteristicElement.innerHTML = formattedText;
+            } else {
+                console.warn('找不到 detail-characteristic 元素');
+        }
+        
+        // 顯示面板
+        document.getElementById('detailPanel').classList.add('open');
+        document.body.style.overflow = 'hidden';
     }
 
     // 從目前資料中尋找原料資料
     findMaterialData(materialCode) {
-        // 這裡需要存儲完整的資料，或從後端重新獲取
-        // 暫時從表格行中提取資料
         const row = this.tbody.querySelector(`tr[data-material-code="${materialCode}"]`);
         if (!row) return null;
 
@@ -148,44 +292,14 @@ class IngredientsTableController {
             notes: cells[6]?.textContent || '',
             unit_price: cells[7]?.textContent || '',
             cost: cells[8]?.textContent || '',
-            // 額外的詳細資訊（通常來自後端）
             material_details: this.getMaterialDetails(materialCode),
             material_properties: this.getMaterialProperties(materialCode)
         };
     }
 
-    // 獲取原料詳細資訊（模擬後端資料）
+    // 獲取原料詳細資訊（模擬資料）
     getMaterialDetails(materialCode) {
-        // 這裡應該從後端API獲取詳細資訊
-        // 暫時提供模擬資料
-        const detailsMap = {
-            'M001': {
-                supplier: '統一麵粉廠',
-                origin: '台灣',
-                shelf_life: '12個月',
-                storage_condition: '常溫乾燥處保存',
-                protein_content: '12.5%',
-                moisture_content: '14%'
-            },
-            'M002': {
-                supplier: '統一食品',
-                origin: '紐西蘭',
-                shelf_life: '6個月',
-                storage_condition: '冷藏保存',
-                fat_content: '82%',
-                salt_content: '1.2%'
-            },
-            'M003': {
-                supplier: '大成食品',
-                origin: '台灣',
-                shelf_life: '28天',
-                storage_condition: '冷藏保存',
-                grade: 'AA級',
-                weight: '60g/顆'
-            }
-        };
-        
-        return detailsMap[materialCode] || {
+        return {
             supplier: '資料待補充',
             origin: '資料待補充',
             shelf_life: '資料待補充',
@@ -193,30 +307,9 @@ class IngredientsTableController {
         };
     }
 
-    // 獲取原料特性（模擬後端資料）
+    // 獲取原料特性（模擬資料）
     getMaterialProperties(materialCode) {
-        const propertiesMap = {
-            'M001': [
-                '高筋麵粉適合製作麵包類產品',
-                '蛋白質含量高，筋性強',
-                '使用前需過篩，去除雜質',
-                '建議在乾燥環境下使用'
-            ],
-            'M002': [
-                '奶油需在室溫下軟化後使用',
-                '含有豐富的乳脂肪',
-                '可增加產品香味和口感',
-                '開封後請盡快使用完畢'
-            ],
-            'M003': [
-                '新鮮雞蛋，品質優良',
-                '可提供蛋白質和結合性',
-                '使用前請確認新鮮度',
-                '建議在使用前回溫至室溫'
-            ]
-        };
-        
-        return propertiesMap[materialCode] || [
+        return [
             '詳細特性資料待補充',
             '請聯繫品管部門了解更多資訊'
         ];
@@ -224,13 +317,11 @@ class IngredientsTableController {
 
     // 更新詳細面板內容
     updateDetailPanelContent(materialData) {
-        // 更新標題
         const detailTitle = document.getElementById('detailTitle');
         if (detailTitle) {
             detailTitle.textContent = `${materialData.material_name} (${materialData.material_code})`;
         }
 
-        // 更新原料基本資料
         const basicInfoElement = document.querySelector('.detail-info:first-child p');
         if (basicInfoElement && materialData.material_details) {
             const details = materialData.material_details;
@@ -242,12 +333,11 @@ class IngredientsTableController {
                 <strong>保存期限：</strong>${details.shelf_life}<br>
                 <strong>儲存條件：</strong>${details.storage_condition}<br>
                 <strong>單位：</strong>${materialData.unit}<br>
-                <strong>單價：</strong>$${materialData.unit_price}
+                <strong>單價：</strong>${materialData.unit_price}
             `;
             basicInfoElement.innerHTML = basicInfoHTML;
         }
 
-        // 更新原料特性
         const propertiesElement = document.querySelector('.detail-info:last-child p');
         if (propertiesElement && materialData.material_properties) {
             const propertiesHTML = materialData.material_properties
@@ -260,85 +350,31 @@ class IngredientsTableController {
     // 開啟詳細面板
     openDetailPanel() {
         const detailPanel = document.getElementById('detailPanel');
-        const overlay = document.getElementById('detailPanelOverlay');
-        
         if (detailPanel) {
             detailPanel.classList.add('open');
         }
-        
-        if (overlay) {
-            overlay.classList.add('show');
-        }
-        
-        // 防止背景滾動
         document.body.style.overflow = 'hidden';
     }
+}
 
-    // 清空所有資料列
-    clearData() {
-        this.tbody.innerHTML = '';
+// 從 URL 獲取配方 ID
+function getRecipeIdFromUrl() {
+    const pathParts = window.location.pathname.split('/');
+    const finalIndex = pathParts.indexOf('final');
+    if (finalIndex !== -1 && finalIndex < pathParts.length - 1) {
+        return pathParts[finalIndex + 1];
     }
-
-    // 取得目前資料列數量
-    getRowCount() {
-        return this.tbody.querySelectorAll('tr').length;
-    }
-
-    // 測試用假資料
-    getTestData() {
-        return [
-            {
-                material_code: 'M001',
-                material_name: '高筋麵粉',
-                unit: 'kg',
-                quantity: 2.5,
-                product_base: 100,
-                notes: '過篩使用',
-                unit_price: 45.00
-            },
-            {
-                material_code: 'M002',
-                material_name: '奶油',
-                unit: 'g',
-                quantity: 500,
-                product_base: 100,
-                notes: '室溫軟化',
-                unit_price: 0.25
-            },
-            {
-                material_code: 'M003',
-                material_name: '雞蛋',
-                unit: '顆',
-                quantity: 3,
-                product_base: 100,
-                notes: '全蛋',
-                unit_price: 8.00
-            }
-        ];
-    }
-
-    // 載入測試資料
-    loadTestData() {
-        const testData = this.getTestData();
-        this.addDataRows(testData);
-        console.log('測試資料載入完成！');
-    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('recipe_id');
 }
 
 // 關閉詳細資料視窗 
 function closeDetailPanel() {
     const detailPanel = document.getElementById('detailPanel');
-    const overlay = document.getElementById('detailPanelOverlay');
-    
     if (detailPanel) {
         detailPanel.classList.remove('open');
     }
-    
-    if (overlay) {
-        overlay.classList.remove('show');
-    }
-    
-    // 恢復背景滾動
     document.body.style.overflow = '';
 }
 
@@ -362,6 +398,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 設置背景點擊關閉功能
     setupOverlayClick();
     
-    // 載入測試資料（在實際使用時移除）
-    window.ingredientsController.loadTestData();
+    // 獲取配方 ID 並載入真實資料
+    const recipeId = getRecipeIdFromUrl();
+    if (recipeId) {
+        window.ingredientsController.loadRecipeData(recipeId);
+    } else {
+        console.warn('No recipe ID found in URL');
+    }
 });

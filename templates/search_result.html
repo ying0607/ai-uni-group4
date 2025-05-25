@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="../static/css/search.css">
     <link rel="stylesheet" href="../static/css/search-results.css"> 
     <script src="../static/JS/search.js" defer></script>
+    <!--<script src="../static/JS/search_result.js" defer></script>-->
+    
 
 </head>
 
@@ -243,5 +245,24 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('.results-table tbody tr');
+            rows.forEach(row => {
+                // 檢查這行是否有實際的配方資料（不是錯誤訊息行）
+                if (row.cells.length === 3 && row.cells[0].textContent.trim()) {
+                    row.style.cursor = 'pointer';
+                    row.classList.add('clickable-row');
+                    
+                    row.addEventListener('click', function() {
+                        const recipeId = this.cells[0].textContent.trim(); // 第一欄是配方ID
+                        if (recipeId) {
+                            window.location.href = `/search/result/final/${recipeId}`;
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
