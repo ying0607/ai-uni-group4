@@ -12,7 +12,7 @@
 </head>
 
 <body>
-    
+    <!--sidebar-->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <!-- 佳質LOGO IMG -->
@@ -177,21 +177,47 @@
         <!--貼上區-->
         <div class="content-container">
             <div class="search-results">
-            <h2 class="results-title">搜索結果</h2>
-            
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>貨品編號</th>
-                        <th>公司</th>
-                        <th>食品名稱</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!--後端資料傳入-->
-                </tbody>
-            </table>
-        </div>
+                <h2 class="results-title">搜索結果</h2>
+                
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>貨品編號</th>
+                            <th>配方名稱</th>
+                            <th>配方種類</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% if results %}
+                            {% for result in results %}
+                            <tr>
+                                <td>{{ result.code }}</td>
+                                <td>{{ result.company }}</td>
+                                <td>{{ result.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            {% if error %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #f44336;">{{ error }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #999;">
+                                    {% if query %}
+                                        找不到與 "{{ query }}" 相關的配方
+                                    {% else %}
+                                        沒有配方資料
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endif %}
+                    </tbody>
+                
+                </table>
+            </div>
         </div>
     </div>
 
@@ -217,79 +243,5 @@
         </div>
     </div>
 
-    <script>
-        // 動態新增表格行的函數
-        function addTableRows(data) {
-            const tbody = document.querySelector('.results-table tbody');
-            
-            // 清空現有內容（包括載入提示）
-            tbody.innerHTML = '';
-            
-            // 遍歷資料並創建新行
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                
-                const codeCell = document.createElement('td');
-                codeCell.textContent = item.code || item.貨品編號 || '';
-                
-                const companyCell = document.createElement('td');
-                companyCell.textContent = item.company || item.公司 || '';
-                
-                const nameCell = document.createElement('td');
-                nameCell.textContent = item.name || item.食品名稱 || '';
-                
-                row.appendChild(codeCell);
-                row.appendChild(companyCell);
-                row.appendChild(nameCell);
-                
-                tbody.appendChild(row);
-            });
-        }
-
-        // 清空表格並顯示載入狀態
-        function showLoading() {
-            const tbody = document.querySelector('.results-table tbody');
-            tbody.innerHTML = '<tr class="loading"><td colspan="3">載入中...</td></tr>';
-        }
-
-        // 顯示無資料狀態
-        function showNoData() {
-            const tbody = document.querySelector('.results-table tbody');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">查無資料</td></tr>';
-        }
-
-        // 模擬從後端獲取資料
-        async function loadData() {
-            try {
-                showLoading();
-                
-                // 這裡替換成你的實際 API 呼叫
-                // const response = await fetch('/api/search-results');
-                // const data = await response.json();
-                
-                // 模擬資料（實際使用時刪除這部分）
-                setTimeout(() => {
-                    const sampleData = [
-                        { code: 'GA05A3011', company: '轻鍾', name: '摩卡咖啡粉' },
-                        { code: 'GA05A3012', company: '星巴克', name: '拿鐵咖啡粉' },
-                        { code: 'GA05A3013', company: '雀巢', name: '美式咖啡豆' }
-                    ];
-                    
-                    if (sampleData.length > 0) {
-                        addTableRows(sampleData);
-                    } else {
-                        showNoData();
-                    }
-                }, 1000);
-                
-            } catch (error) {
-                console.error('載入資料時發生錯誤:', error);
-                showNoData();
-            }
-        }
-
-        // 頁面載入完成後自動載入資料
-        document.addEventListener('DOMContentLoaded', loadData);
-    </script>
 </body>
 </html>

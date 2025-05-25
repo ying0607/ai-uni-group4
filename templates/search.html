@@ -201,6 +201,19 @@
         </div>
     </div>
 
+    <!--測試連線用-->
+    <script>
+        function fetchContent() {
+            fetch("/search")
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("content-container").innerText = data;
+                })
+                .catch(error => {
+                    console.error("連線錯誤：", error);
+                });
+        }
+    </script>
 
 </body>
 </html>
