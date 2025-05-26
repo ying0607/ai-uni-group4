@@ -1,14 +1,12 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>佳實食品_小江解AI配方系统</title>
-    <link rel="icon" href="Assets/Image/favicon.png" type="image/png">
-    <link rel="stylesheet" href="Assets/css/search.css">
-    <link rel="stylesheet" href="{% static 'search.css' %}">
-    <script src="{% static 'JS/search.js' %}" defer></script>
+    <link rel="icon" href="../static/image/favicon.png" type="image/png">
+    <link rel="stylesheet" href="../static/css/search.css">
+    <script src="../static/JS/search.js" defer></script>
 </head>
 
 <body>
@@ -17,7 +15,7 @@
         <div class="sidebar-header">
             <!-- 佳質LOGO IMG -->
             <div class="logo-container">
-                <img src="Assets/Image/logo-1.png" alt="VALUE!" class="logo" id="logo">
+                <img src="../static/image/logo-1.png" alt="VALUE!" class="logo" id="logo">
             </div>
             <div class="sidebar-icons">
                 <!-- SideBar 搜尋功能 -->
@@ -177,22 +175,7 @@
         
         <!--貼上區-->
         <div class="content-container">
-            <div class="content-container">
-                {% if results %}
-                    <div class="search-results">
-                        {% for result in results %}
-                            <div class="search-result-item">
-                                <h3><a href="{% url 'detail' result.id %}">{{ result.name }}</a></h3>
-                                <p>{{ result.description|truncatechars:150 }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% elif query %}
-                    <p>沒有找到相關結果。</p>
-                {% else %}
-                    <!-- Empty content area -->
-                {% endif %}
-            </div>
+            <!-- Empty content area -->
         </div>
     </div>
 
@@ -218,6 +201,19 @@
         </div>
     </div>
 
+    <!--測試連線用-->
+    <script>
+        function fetchContent() {
+            fetch("/search")
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById("content-container").innerText = data;
+                })
+                .catch(error => {
+                    console.error("連線錯誤：", error);
+                });
+        }
+    </script>
 
 </body>
 </html>

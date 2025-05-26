@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from langchain.tools import BaseTool
 from langchain.agents import AgentType, initialize_agent
 from langchain.llms import OllamaLLM  # Import OllamaLLM
-from database.db_operations import search_materials, search_recipes, get_recipe_with_steps
+from database.operations import search_materials, search_recipes, get_recipe_with_steps
 
 load_dotenv()
 

@@ -1,0 +1,597 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f9f9f9;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 240px;
+    height: 100%;
+    background-color: #f3f3f3;
+    transition: all 0.3s ease;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.sidebar-collapsed {
+    width: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+.sidebar-header {
+    height: 60px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /*border-bottom: 1px solid #ddd;*/
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+
+.logo {
+    height: 40px;
+    width: auto;
+    transition: all 0.3s ease;
+}
+
+.sidebar-icons {
+    display: flex;
+    gap: 10px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+}
+
+.icon-button:hover {
+    background-color: #e0e0e0;
+}
+
+/* Sidebar Menu */
+
+/*調整 【padding】*/
+.sidebar-menu {
+    padding: 20px 0;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/*調整 【padding、margin】*/
+/*新增 【border-radius】*/
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: #333;
+    position: relative;
+    border-radius: 30px;
+    margin: 10px 15px 10px  10px ;
+}
+
+.menu-item:hover {
+    background-color: #e9e9e9;
+}
+
+.menu-item.active {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+/*新增 【Font-Size】*/
+.menu-item-text {
+    margin-left: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.3s;
+    font-size: 14px;
+}
+
+.menu-icon {
+    min-width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+/*取消 【border-bottom】*/ 
+.sidebar-search {
+    padding: 15px 20px;
+    /*border-bottom: 1px solid #ddd;*/
+    display: none;
+}
+
+/*調整 【padding】*/ 
+.sidebar-search-input {
+    width: 100%;
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px solid #aaa;
+    background-color: transparent;
+    outline: none;
+}
+
+/* Menu icons on the right */
+.menu-icons-right {
+    margin-left: auto;
+    margin-right: 10px;
+    display: flex;
+    gap: 5px;
+}
+
+.menu-action-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+
+.menu-action-icon:hover {
+    background-color: #dadada;
+}
+
+/* Rotate icon when expanded */
+.expand-icon[data-expanded="true"] svg {
+    transform: rotate(45deg);
+}
+
+
+/* Styling for the expand/collapse chevron icon */
+.expand-icon svg {
+    transition: transform 0.3s ease;
+}
+
+/* Default state - pointing right (collapsed) */
+.expand-icon svg {
+    transform: rotate(0deg);
+}
+
+/* Expanded state - pointing down */
+.expand-icon[data-expanded="true"] svg {
+    transform: rotate(90deg);
+}
+
+/* Optional: Adjust the icon positioning if needed */
+.menu-action-icon.expand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/*----小江解 子選單----*/
+
+/*取消【background-color】*/
+.submenu {
+    padding-left: 30px;
+    /*background-color: #e8e8e8;*/
+    /*display: none; /* Initially hidden */
+}
+
+/*調整 【padding、margin】*/
+/*新增 【border-radius】、【元素排版】*/
+.submenu-item {
+    padding: 8px 15px;
+    cursor: pointer;
+    color: #444;
+    border-radius: 30px;
+    margin: 10px 15px 10px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.submenu-item:hover {
+    background-color: #e9e9e9;
+    border-radius: 30px;
+}
+
+/*新增此段*/
+.submenu-item-text{
+    font-size: 14PX;
+    flex-grow: 1;
+}
+
+.more-actions {
+    position: relative;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 16px;
+    color: #666;
+}
+
+.more-actions:hover {
+    color: #000;
+}
+
+.action-menu {
+    position: absolute;
+    left: -20px;
+    top: calc(100% - 10px);
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    min-width: 40px; /* Reduced from 120px */
+    display: none;
+    padding: 4px; /* Add some padding */
+    z-index: 200;
+}
+
+.action-item {
+    padding: 8px 5px ; /* Reduced padding */
+    font-size: 16px; /* Increased for icons */
+    color: #444;
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px; /* Add border radius for better hover effect */
+}
+
+.action-item:hover {
+    background-color: #f0f0f0;
+}
+
+.action-item.delete {
+    color: #d93025;
+}
+
+.action-item.delete:hover {
+    background-color: #fdf2f2; /* Light red background on hover */
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    padding: 10px 20px 20px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 10px ;
+    margin-bottom: 20px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Search Section */
+.search-section {
+    margin: 0 50px 20px 0 ;
+    border-bottom:2px #aaa solid ;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    max-width: 600px;
+    /*new*/
+    position: relative;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+/*new*/
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding:  10px 15px 10px 50px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    /*new*/
+    transition: border-color 0.3s ease;
+}
+
+/*new*/
+.search-input:focus {
+    border-color: #007bff;
+}
+
+
+.search-icon {
+    position: absolute;
+    left: 18px;
+    color: #666;
+    z-index: 1;
+}
+
+/*進階搜尋按鈕*/
+.advanced-search-icon {
+    padding: 8px;
+    width: 38px;
+    height: 38px;
+    background: #f1f3f4;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.advanced-search-icon:hover {
+    background: #e8eaed;
+    border-color: #007bff;
+}
+
+/*搜尋按鈕*/
+.search-button {
+    background-color: #e8e8e8;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    margin-left: 10px;
+    cursor: pointer;
+    color: #333;
+    font-size: 14px;
+    /*new*/
+    transition: all 0.3s ease;
+}
+
+.search-button:hover {
+    background-color: #d8d8d8;
+}
+
+/* Advanced Search Dialog */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1000;
+}
+        
+.modal-overlay.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background: #f1f3f4;
+    color: #333;
+}
+
+.btn-cancel:hover {
+    background: #e8eaed;
+}
+
+.btn-submit {
+    background: #007bff;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #0056b3;
+}
+
+.tooltip {
+    position: relative;
+}
+
+.tooltip:hover::after {
+    content: "進階搜尋";
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1001;
+}
+
+.tooltip:hover::before {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: #333;
+    z-index: 1001;
+}
+
+/* 搜尋結果呈現*/
+.content-container {
+    justify-content: center;
+    align-items: center;
+    margin: 0 50px 0 20px;
+}
+
+/* Nav Area */
+.nav-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 20px;
+    margin-bottom: 5px;
+}
+
+.nav-separator {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-left #nav-logo {
+    height: 30px;
+    margin-left: 10px;
+}
+
+.member-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    background-color: #f5f5f5;
+}
+
+.member-icon:hover {
+    background-color: #e0e0e0;
+}
+
+.member-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: white;
+    min-width: 140px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    text-align: center;
+}
+
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+}
+
+.show {
+    display: block;
+}

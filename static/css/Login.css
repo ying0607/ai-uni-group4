@@ -1,0 +1,105 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+.logo {
+    margin-bottom: 20px;
+    max-width: 200px;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 50px;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.input-container {
+    position: relative;
+}
+
+.error-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ff0000;
+    display: none;
+}
+
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    background-color: #e5e5e5;
+    font-size: 16px;
+}
+
+.error-message {
+    color: #ff0000;
+    font-size: 14px;
+    margin-top: 5px;
+    display: none;
+}
+
+.forgot-password {
+    text-align: right;
+    font-size: 14px;
+}
+
+.forgot-password a {
+    color: #333;
+    text-decoration: none;
+}
+
+.login-button {
+    background-color: #e5e5e5;
+    border: none;
+    color: #000;
+    padding: 15px 0;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 25px;
+    margin-top: 20px;
+}
+
+.login-button:hover {
+    background-color: #d5d5d5;
+}
+
+/* Triangle warning icon */
+.warning-triangle {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 16px solid #ff0000;
+    transform: rotate(0deg);
+    display: inline-block;
+    margin-right: 5px;
+}
