@@ -2,192 +2,331 @@
 # -*- coding: utf-8 -*-
 """
 原料查詢系統
-從 CSV 檔案中載入以 'G' 開頭的原料資料，並透過外部 API 進行相關性查詢
+從資料庫中載入以 'G' 開頭的配方資料，並透過 LLM 進行相關性查詢
 """
 
-import pandas as pd
 import os
+import sys
 import re
-import requests
-import json
 from typing import List, Optional
 from dotenv import load_dotenv
 from langchain_ollama.llms import OllamaLLM  # type: ignore
 
+# 將專案根目錄加入到 PYTHONPATH
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+from database import operations as db_ops
+
 # 載入環境變數
 load_dotenv()
 
-# --- Configuration Constants ---
-CSV_FILENAME = "GBOM_product_data_name_20250522.csv"
-COLUMN_MATERIAL_ID = "產品編號"        # Material ID column
-COLUMN_MATERIAL_NAME = "產品名稱"      # Material Name column
-
 # --- 常數設定  ---
-MODEL_NAME = os.getenv("MODEL_NAME")
-SERVER_URL = os.getenv("SERVER_URL")
+MODEL_NAME = os.getenv("MODEL_NAME", "llama3.2")  # 預設模型
+SERVER_URL = os.getenv("SERVER_URL", "http://localhost:11434")  # 預設 Ollama 伺服器
 
 # --- LLM 初始化  ---
 print(f"正在初始化 Ollama LLM: Model='{MODEL_NAME}', Server='{SERVER_URL}'")
 if not MODEL_NAME or not SERVER_URL:
     print("❌ 錯誤: MODEL_NAME 或 SERVER_URL 未在 .env 檔案中設定。無法初始化 LLM。")
-    llm = None  # 確保 llm 為 None，以便後續檢查
+    llm = None
 else:
     try:
         llm = OllamaLLM(
             model=MODEL_NAME,
-            base_url=SERVER_URL
+            base_url=SERVER_URL,
+            temperature=0.1,  # 降低溫度以獲得更一致的結果
+            num_predict=500,  # 限制回應長度
         )
+        # 測試連線
+        test_response = llm.invoke("測試連線")
         print("   ✅ Ollama LLM 初始化成功。")
     except Exception as e:
         print(f"❌ 初始化 Ollama LLM 時發生錯誤: {e}")
-        llm = None  # 初始化失敗，設為 None
+        llm = None
 
-def load_and_filter_g_materials(csv_filepath: str, id_column: str, name_column: str) -> Optional[List[str]]:
+def load_g_recipes_from_database() -> Optional[List[str]]:
     """
-    載入 CSV 檔案，篩選出以 'G' 開頭的原料編號對應的原料名稱
+    從資料庫載入以 'G' 開頭的配方名稱
     
-    Args:
-        csv_filepath: CSV 檔案路徑
-        id_column: 原料編號欄位名稱
-        name_column: 原料名稱欄位名稱
-        
     Returns:
-        以 'G' 開頭的原料名稱列表，或 None（如果載入失敗）
+        以 'G' 開頭的配方名稱列表，或 None（如果載入失敗）
     """
-    print(f"\n2. 讀取並篩選 CSV 檔案: {csv_filepath}")
+    print(f"\n2. 從資料庫載入以 'G' 開頭的配方資料...")
     
     try:
-        df = pd.read_csv(csv_filepath)
-        print(f"   ✅ CSV 讀取成功，共 {len(df)} 行。")
-    except FileNotFoundError:
-        print(f"❌ 錯誤: CSV 檔案 '{csv_filepath}' 找不到。")
-        return None
+        # 使用 operations.py 的函數取得 G 類型的配方
+        g_recipes_df = db_ops.get_recipes_by_type('G')
+        
+        if g_recipes_df.empty:
+            print(f"   ℹ️ 在資料庫中未找到任何 'G' 類型的配方。")
+            return []
+        
+        # 取得不重複的配方名稱列表
+        recipe_names_list = g_recipes_df['recipe_name'].dropna().unique().tolist()
+        print(f"   ✅ 找到 {len(recipe_names_list)} 個 'G' 類型的獨立配方名稱。")
+        return recipe_names_list
+        
     except Exception as e:
-        print(f"❌ 讀取 CSV 時發生錯誤: {e}")
+        print(f"❌ 從資料庫載入配方時發生錯誤: {e}")
         return None
 
-    # 檢查必要欄位是否存在
-    if id_column not in df.columns:
-        print(f"❌ 錯誤: CSV 中找不到「原料編號」欄位 '{id_column}'。可用欄位: {df.columns.tolist()}")
-        return None
-    if name_column not in df.columns:
-        print(f"❌ 錯誤: CSV 中找不到「原料名稱」欄位 '{name_column}'。可用欄位: {df.columns.tolist()}")
-        return None
-
-    # 確保原料編號欄位為字串型態以便篩選
-    df[id_column] = df[id_column].astype(str)
-
-    # 篩選以 'G' 開頭的原料編號（不區分大小寫）
-    g_materials_df = df[df[id_column].str.upper().str.startswith('G')]
-
-    if g_materials_df.empty:
-        print(f"   ℹ️ 在 '{id_column}' 欄位中未找到任何以 'G' 開頭的原料編號。")
-        return []
-
-    # 取得不重複的原料名稱列表
-    material_names_list = g_materials_df[name_column].dropna().unique().tolist()
-    print(f"   ✅ 找到 {len(material_names_list)} 個以 'G' 開頭的獨立原料名稱。")
-    return material_names_list
-
-def get_related_materials_with_api(search_term: str, g_material_names_list: List[str], api_client: MaterialSearchClient) -> List[str]:
+def create_search_prompt(search_term: str, materials_batch: List[str]) -> str:
     """
-    使用外部 API 從 G 開頭的原料列表中找出與搜尋詞相關的項目
+    建立給 LLM 的搜尋提示詞
     
     Args:
         search_term: 搜尋詞彙
-        g_material_names_list: G 開頭的原料名稱列表
-        api_client: API 客戶端實例
+        materials_batch: 原料名稱批次
         
     Returns:
-        相關原料名稱列表
+        格式化的提示詞
     """
-    if not g_material_names_list:
-        return ["沒有以 'G' 開頭的原料名稱可供查詢。"]
+    materials_text = "\n".join([f"- {material}" for material in materials_batch])
+    
+    prompt = f"""請分析以下配方清單，找出與「{search_term}」相關的配方。
 
-    print(f"\n3. 使用外部 API 從 'G' 開頭的原料列表中尋找與 '{search_term}' 相關的項目...")
+配方清單：
+{materials_text}
+
+請只回傳相關的配方名稱，每個一行。如果沒有相關的配方，請回答「無」。
+
+判斷相關性的標準：
+1. 配方名稱中包含搜尋詞或其相關詞彙
+2. 配方功能或用途與搜尋詞相關
+3. 配方類別與搜尋詞相關
+
+請直接列出相關配方名稱，不需要解釋原因。"""
+    
+    return prompt
+
+def parse_llm_response(response: str, valid_materials: List[str]) -> List[str]:
+    """
+    解析 LLM 的回應，提取有效的配方名稱
+    
+    Args:
+        response: LLM 的回應文字
+        valid_materials: 有效的配方名稱列表
+        
+    Returns:
+        經過驗證的相關配方名稱列表
+    """
+    if not response or response.strip().lower() in ['無', '沒有', 'none', 'no']:
+        return []
+    
+    # 將有效配方轉換為集合以加快查找
+    valid_set = set(valid_materials)
+    related_materials = []
+    
+    # 按行分割回應
+    lines = response.strip().split('\n')
+    
+    for line in lines:
+        # 清理每一行（移除項目符號、編號等）
+        cleaned_line = re.sub(r'^[-•*\d.]+\s*', '', line.strip())
+        
+        # 檢查是否為有效的配方名稱
+        if cleaned_line and cleaned_line in valid_set:
+            related_materials.append(cleaned_line)
+    
+    return related_materials
+
+def get_related_materials_with_llm(search_term: str, g_recipe_names_list: List[str]) -> List[str]:
+    """
+    使用 LLM 從 G 類型的配方列表中找出與搜尋詞相關的項目
+    
+    Args:
+        search_term: 搜尋詞彙
+        g_recipe_names_list: G 類型的配方名稱列表
+        
+    Returns:
+        相關配方名稱列表
+    """
+    if not g_recipe_names_list:
+        return ["沒有 'G' 類型的配方名稱可供查詢。"]
+    
+    if llm is None:
+        return ["LLM 未初始化，無法進行查詢。"]
+    
+    print(f"\n3. 使用 LLM 從 'G' 類型的配方列表中尋找與 '{search_term}' 相關的項目...")
     
     try:
-        related_materials = api_client.search_materials(search_term, g_material_names_list)
+        # 如果配方列表太長，分批處理
+        batch_size = 50  # 每批處理的配方數量
+        all_related_materials = []
         
-        if not related_materials:
-            return []
+        for i in range(0, len(g_recipe_names_list), batch_size):
+            batch = g_recipe_names_list[i:i + batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(g_recipe_names_list) + batch_size - 1) // batch_size
+            
+            print(f"   處理批次 {batch_num}/{total_batches}...")
+            
+            # 建立提示詞
+            prompt = create_search_prompt(search_term, batch)
+            
+            # 呼叫 LLM
+            response = llm.invoke(prompt)
+            
+            # 解析回應
+            batch_related = parse_llm_response(response, batch)
+            all_related_materials.extend(batch_related)
+            
+            print(f"   批次 {batch_num} 找到 {len(batch_related)} 個相關項目")
         
-        # 驗證 API 回傳的結果是否都在原始列表中
-        original_g_names_set = set(g_material_names_list)
-        validated_related_names = []
+        # 去除重複項目
+        all_related_materials = list(set(all_related_materials))
         
-        for name in related_materials:
-            if isinstance(name, str) and name.strip():
-                clean_name = name.strip()
-                if clean_name in original_g_names_set:
-                    validated_related_names.append(clean_name)
-                else:
-                    # API 回傳的項目不在原始列表中，可能是 API 的變化或錯誤
-                    print(f"   ⚠️ API 回傳項目 '{clean_name}' 不在原始 G 開頭列表中")
-        
-        if not validated_related_names and related_materials:
-            print("   ⚠️ API 回應的項目經過驗證後，未發現有效對應原始 G 開頭列表中的項目。")
-        
-        return validated_related_names
+        return all_related_materials
         
     except Exception as e:
-        print(f"❌ API 查詢時發生錯誤: {e}")
-        return [f"API 查詢失敗: {str(e)[:100]}"]
+        print(f"❌ LLM 查詢時發生錯誤: {e}")
+        return [f"LLM 查詢失敗: {str(e)[:100]}"]
+
+def get_recipe_details_by_name(recipe_name: str) -> Optional[dict]:
+    """
+    根據配方名稱取得配方詳細資訊
+    
+    Args:
+        recipe_name: 配方名稱
+        
+    Returns:
+        配方詳細資訊字典，或 None
+    """
+    try:
+        # 使用 operations.py 的搜尋功能
+        recipes_df = db_ops.search_recipes(recipe_name)
+        
+        if recipes_df.empty:
+            return None
+        
+        # 取得第一個匹配的配方
+        recipe_row = recipes_df.iloc[0]
+        recipe_id = recipe_row['recipe_id']
+        
+        # 取得配方完整資訊（包含步驟）
+        recipe_with_steps = db_ops.get_recipe_with_steps(recipe_id)
+        
+        return recipe_with_steps
+        
+    except Exception as e:
+        print(f"❌ 取得配方詳細資訊時發生錯誤: {e}")
+        return None
+
+def display_recipe_details(recipe_name: str):
+    """
+    顯示配方的詳細資訊
+    
+    Args:
+        recipe_name: 配方名稱
+    """
+    print(f"\n--- 配方 '{recipe_name}' 詳細資訊 ---")
+    
+    recipe_details = get_recipe_details_by_name(recipe_name)
+    
+    if not recipe_details:
+        print(f"❌ 無法找到配方 '{recipe_name}' 的詳細資訊")
+        return
+    
+    print(f"配方編號: {recipe_details['recipe_id']}")
+    print(f"配方名稱: {recipe_details['recipe_name']}")
+    print(f"配方類型: {recipe_details['recipe_type']}")
+    print(f"版本: {recipe_details['version']}")
+    if recipe_details.get('specification'):
+        print(f"規格: {recipe_details['specification']}")
+    if recipe_details.get('standard_hours'):
+        print(f"標準工時: {recipe_details['standard_hours']}")
+    
+    if 'steps' in recipe_details and recipe_details['steps']:
+        print(f"\n配方步驟 (共 {len(recipe_details['steps'])} 個步驟):")
+        for i, step in enumerate(recipe_details['steps'], 1):
+            material_name = step.get('material_name', '未知材料')
+            quantity = step.get('quantity', 0)
+            unit = step.get('unit', '')
+            notes = step.get('notes', '')
+            
+            print(f"  步驟 {i}: {material_name} - {quantity} {unit}")
+            if notes:
+                print(f"         備註: {notes}")
+    else:
+        print("   此配方沒有步驟資訊")
+
+def test_llm_connection() -> bool:
+    """
+    測試 LLM 連線是否正常
+    
+    Returns:
+        True 如果連線正常，False 否則
+    """
+    if llm is None:
+        return False
+    
+    try:
+        response = llm.invoke("回答「OK」")
+        return "OK" in response.upper()
+    except Exception as e:
+        print(f"❌ 測試 LLM 連線失敗: {e}")
+        return False
+
+def test_database_connection() -> bool:
+    """
+    測試資料庫連線是否正常
+    
+    Returns:
+        True 如果連線正常，False 否則
+    """
+    try:
+        # 嘗試取得所有配方來測試連線
+        recipes = db_ops.get_all_recipes()
+        print(f"   ✅ 資料庫連線成功，共找到 {len(recipes)} 個配方")
+        return True
+    except Exception as e:
+        print(f"   ❌ 資料庫連線失敗: {e}")
+        return False
 
 def main():
     """主程式"""
-    print("=" * 50)
-    print("原料查詢系統 - 外部 API 版本")
-    print("=" * 50)
+    print("=" * 60)
+    print("配方查詢系統 - LLM 版本 (使用資料庫)")
+    print("=" * 60)
     
-    # 1. 初始化 API 客戶端
-    print("1. 初始化外部 API 連線...")
-    
-    # 從環境變數或直接設定 API 相關資訊
-    api_url = os.environ.get('MATERIAL_API_URL', API_BASE_URL)
-    api_key = os.environ.get('MATERIAL_API_KEY', API_KEY)
-    
-    api_client = MaterialSearchClient(api_url, api_key)
-    
-    # 簡單的連線測試（可選）
-    try:
-        # 您可以實作一個 health check 端點來測試連線
-        test_response = api_client.session.get(f"{api_url}/health", timeout=5)
-        if test_response.status_code == 200:
-            print(f"   ✅ API Server 連線成功: {api_url}")
-        else:
-            print(f"   ⚠️ API Server 回應異常: {test_response.status_code}")
-    except:
-        print(f"   ⚠️ 無法測試 API Server 連線，將繼續執行程式")
-    
-    # 2. 載入並篩選 G 開頭原料資料
-    print("\n" + "=" * 50)
-    print("程式啟動：正在預先載入及篩選 'G' 開頭原料資料，請稍候...")
-    
-    g_materials_master_list = load_and_filter_g_materials(
-        CSV_FILENAME,
-        COLUMN_MATERIAL_ID,
-        COLUMN_MATERIAL_NAME
-    )
-    
-    print("=" * 50)
-    
-    if g_materials_master_list is None:  # CSV 載入失敗
-        print("因讀取或解析 CSV 檔案失敗，無法啟動查詢迴圈。請檢查檔案和欄位名稱設定。")
+    # 1. 測試資料庫連線
+    print("1. 測試資料庫連線...")
+    if not test_database_connection():
+        print("   請檢查資料庫設定和連線")
         return
-    elif not g_materials_master_list:  # CSV 載入成功但沒有 G 開頭的資料
-        print(f"CSV 檔案已載入，但在 '{COLUMN_MATERIAL_ID}' 欄位未找到以 'G' 開頭的有效原料，")
-        print(f"或其對應的 '{COLUMN_MATERIAL_NAME}' 為空。無法進行後續查詢。")
+    
+    # 2. 測試 LLM 連線
+    print("\n2. 測試 LLM 連線...")
+    if test_llm_connection():
+        print("   ✅ LLM 連線測試成功")
+    else:
+        print("   ❌ LLM 連線測試失敗，請檢查 Ollama 服務是否正在運行")
+        print("   提示：請確認已執行 'ollama serve' 並下載所需模型")
+        return
+    
+    # 3. 載入 G 類型配方資料
+    print("\n" + "=" * 60)
+    print("程式啟動：正在預先載入 'G' 類型配方資料，請稍候...")
+    
+    g_recipes_master_list = load_g_recipes_from_database()
+    
+    print("=" * 60)
+    
+    if g_recipes_master_list is None:  # 資料庫載入失敗
+        print("因讀取資料庫失敗，無法啟動查詢迴圈。請檢查資料庫連線和設定。")
+        return
+    elif not g_recipes_master_list:  # 資料庫載入成功但沒有 G 類型的資料
+        print("資料庫已連線，但未找到 'G' 類型的配方。無法進行後續查詢。")
         return
     else:
-        print(f"\n✅ 'G' 開頭原料資料載入完成，共找到 {len(g_materials_master_list)} 筆獨立原料名稱。")
+        print(f"\n✅ 'G' 類型配方資料載入完成，共找到 {len(g_recipes_master_list)} 筆獨立配方名稱。")
         print("✅ 系統已就緒，可以開始查詢。")
     
-    # 3. 進入查詢迴圈
+    # 4. 進入查詢迴圈
     while True:
-        print("-" * 50)
+        print("-" * 60)
         try:
-            user_search_term = input("\n➡️ 請輸入您要查詢的原料相關詞彙 (或輸入 'exit'/'quit' 離開): ").strip()
+            user_search_term = input("\n➡️ 請輸入您要查詢的配方相關詞彙 (或輸入 'exit'/'quit' 離開): ").strip()
         except KeyboardInterrupt:
             print("\n\n使用者中斷程式執行。")
             break
@@ -205,33 +344,43 @@ def main():
         
         print(f"\n您輸入的查詢詞是: '{user_search_term}'")
         
-        # 使用預先載入的 g_materials_master_list 進行 API 查詢
-        related_g_materials = get_related_materials_with_api(
+        # 使用預先載入的 g_recipes_master_list 進行 LLM 查詢
+        related_g_recipes = get_related_materials_with_llm(
             user_search_term, 
-            g_materials_master_list, 
-            api_client
+            g_recipes_master_list
         )
         
         # 顯示查詢結果
         print("\n--- 查詢結果 ---")
-        if related_g_materials:
+        if related_g_recipes:
             # 檢查是否為錯誤訊息
             is_error_message = (
-                len(related_g_materials) == 1 and
-                isinstance(related_g_materials[0], str) and
-                any(keyword in related_g_materials[0] for keyword in ["錯誤", "失敗", "超時", "連線"])
+                len(related_g_recipes) == 1 and
+                isinstance(related_g_recipes[0], str) and
+                any(keyword in related_g_recipes[0] for keyword in ["錯誤", "失敗", "超時", "連線"])
             )
             
             if is_error_message:
-                print(f"❗ 查詢過程中發生問題: {related_g_materials[0]}")
-            elif not any(related_g_materials):  # 處理空字串列表的情況
-                print(f"✅ API 分析完成，但未在 'G' 開頭的原料中找到與 '{user_search_term}' 明確相關的項目。")
+                print(f"❗ 查詢過程中發生問題: {related_g_recipes[0]}")
+            elif not any(related_g_recipes):  # 處理空字串列表的情況
+                print(f"✅ LLM 分析完成，但未在 'G' 類型的配方中找到與 '{user_search_term}' 明確相關的項目。")
             else:
-                print(f"與 '{user_search_term}' 相關且原料編號以 'G' 開頭的原料名稱有：")
-                for i, name in enumerate(related_g_materials, 1):
+                print(f"與 '{user_search_term}' 相關且類型為 'G' 的配方名稱有：")
+                for i, name in enumerate(related_g_recipes, 1):
                     print(f"{i:2d}. {name}")
+                
+                # 詢問是否要查看詳細資訊
+                if len(related_g_recipes) <= 5:  # 只有在結果不太多時才提供詳細資訊選項
+                    try:
+                        show_details = input(f"\n是否要查看配方的詳細資訊？(y/n): ").strip().lower()
+                        if show_details in ['y', 'yes', '是', '要']:
+                            for recipe_name in related_g_recipes:
+                                display_recipe_details(recipe_name)
+                                print("-" * 40)
+                    except (KeyboardInterrupt, EOFError):
+                        print("\n跳過詳細資訊顯示")
         else:
-            print(f"未能在 'G' 開頭的原料中找到與 '{user_search_term}' 相關的項目。")
+            print(f"未能在 'G' 類型的配方中找到與 '{user_search_term}' 相關的項目。")
     
     print("\n--- 程式執行完畢 ---")
 
