@@ -255,4 +255,4 @@ if __name__ == "__main__":
         
         print("\n配方步驟:")
         for i, step in enumerate(recipe_detail['steps']):
-            print(f"  步驟 {i+1}: 使用 {step['material_name']} {step['quantity']} {step['unit']}")
+            print(f"  步驟 {i+1}: 使用 {step['material_name']} {step['quantity']} {step['unit']}, 注意事項: {step.get('precaution')}")

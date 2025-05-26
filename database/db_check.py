@@ -50,6 +50,15 @@ def check_table_structure():
             count = cursor.fetchone()
             print(f"配方步驟表中總記錄數: {count['total']}")
             
+            # 查看注意事項
+            step_id = 'FA05B3011-5'
+            cursor.execute(f"SELECT precaution FROM {GROUP_PREFIX}recipe_step WHERE step_id = '{step_id}'")
+            notes = cursor.fetchone()
+            if notes:
+                print(f"配方 {step_id} 的注意事項: {notes['precaution']}")
+            else:
+                print(f"配方 {step_id} 沒有注意事項")
+            
             # 列出所有表，確認命名
             cursor.execute("SHOW TABLES")
             tables = cursor.fetchall()
