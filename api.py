@@ -59,7 +59,6 @@ def api_search():
             
     return jsonify({"results": results, "keyword": keyword})
 
-
 @api_bp.route('/recipe/<recipe_id>')
 def get_recipe_detail(recipe_id):
     """取得配方詳細資料 API"""
@@ -151,6 +150,7 @@ def get_recipe_detail(recipe_id):
                 "quantity": quantity,
                 "product_base": step.get('product_base', ''),
                 "notes": step.get('notes', ''),
+                "precaution": step.get('precaution', ''), #新增
                 "unit_price": unit_price,
                 "cost": round(cost, 2),
                 "characteristic": characteristic,
