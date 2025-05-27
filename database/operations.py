@@ -221,6 +221,26 @@ def get_recipes_with_filtered_materials(material_type=None, supplier_id=None):
     
     df = pd.read_sql(query, engine, params=params)
     return df
+def get_recipe_details_by_name(recipe_name: str):
+    """根據配方名稱取得配方詳細資訊"""
+    try:
+        recipes_df = search_recipes(recipe_name)
+        
+        if recipes_df.empty:
+            return None
+        
+        # 取得第一個匹配的配方 ID
+        recipe_row = recipes_df.iloc[0]
+        recipe_id = recipe_row['recipe_id']
+        
+        # 取得完整配方資訊（包含步驟）
+        recipe_with_steps = get_recipe_with_steps(recipe_id)
+        
+        return recipe_with_steps
+        
+    except Exception as e:
+        print(f"❌ 取得配方詳細資訊時發生錯誤: {e}")
+        return None
 
 # 使用範例
 if __name__ == "__main__":

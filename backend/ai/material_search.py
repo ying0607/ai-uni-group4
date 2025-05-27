@@ -21,28 +21,35 @@ from database import operations as db_ops
 load_dotenv()
 
 # --- 常數設定  ---
-MODEL_NAME = os.getenv("MODEL_NAME", "llama3.2")  # 預設模型
-SERVER_URL = os.getenv("SERVER_URL", "http://localhost:11434")  # 預設 Ollama 伺服器
+MODEL_NAME = os.getenv("MODEL_NAME")  # 預設模型
+SERVER_URL = os.getenv("SERVER_URL")  # 預設 Ollama 伺服器
 
-# --- LLM 初始化  ---
-print(f"正在初始化 Ollama LLM: Model='{MODEL_NAME}', Server='{SERVER_URL}'")
-if not MODEL_NAME or not SERVER_URL:
-    print("❌ 錯誤: MODEL_NAME 或 SERVER_URL 未在 .env 檔案中設定。無法初始化 LLM。")
-    llm = None
-else:
-    try:
-        llm = OllamaLLM(
-            model=MODEL_NAME,
-            base_url=SERVER_URL,
-            temperature=0.1,  # 降低溫度以獲得更一致的結果
-            num_predict=500,  # 限制回應長度
-        )
-        # 測試連線
-        test_response = llm.invoke("測試連線")
-        print("   ✅ Ollama LLM 初始化成功。")
-    except Exception as e:
-        print(f"❌ 初始化 Ollama LLM 時發生錯誤: {e}")
-        llm = None
+def _default_output_callback(msg):
+    print(msg)
+
+def _init_llm(output_callback=_default_output_callback):
+    output_callback(f"正在初始化 Ollama LLM: Model='{MODEL_NAME}', Server='{SERVER_URL}'")
+    if not MODEL_NAME or not SERVER_URL:
+        output_callback("❌ 錯誤: MODEL_NAME 或 SERVER_URL 未在 .env 檔案中設定。無法初始化 LLM。")
+        return None
+    else:
+        try:
+            llm = OllamaLLM(
+                model=MODEL_NAME,
+                base_url=SERVER_URL,
+                temperature=0.1,  # 降低溫度以獲得更一致的結果
+                num_predict=500,  # 限制回應長度
+            )
+            # 測試連線
+            test_response = llm.invoke("測試連線")
+            output_callback("   ✅ Ollama LLM 初始化成功。")
+            return llm
+        except Exception as e:
+            output_callback(f"❌ 初始化 Ollama LLM 時發生錯誤: {e}")
+            return None
+
+# 預設初始化一次供全域功能使用
+llm = _init_llm()
 
 def load_g_recipes_from_database() -> Optional[List[str]]:
     """
@@ -283,26 +290,26 @@ def test_database_connection() -> bool:
         print(f"   ❌ 資料庫連線失敗: {e}")
         return False
 
-def main():
-    """主程式"""
-    print("=" * 60)
-    print("配方查詢系統 - LLM 版本 (使用資料庫)")
-    print("=" * 60)
+def main(search_name):
+    # """主程式"""
+    # print("=" * 60)
+    # print("配方查詢系統 - LLM 版本 (使用資料庫)")
+    # print("=" * 60)
     
-    # 1. 測試資料庫連線
-    print("1. 測試資料庫連線...")
-    if not test_database_connection():
-        print("   請檢查資料庫設定和連線")
-        return
+    # # 1. 測試資料庫連線
+    # print("1. 測試資料庫連線...")
+    # if not test_database_connection():
+    #     print("   請檢查資料庫設定和連線")
+    #     return
     
-    # 2. 測試 LLM 連線
-    print("\n2. 測試 LLM 連線...")
-    if test_llm_connection():
-        print("   ✅ LLM 連線測試成功")
-    else:
-        print("   ❌ LLM 連線測試失敗，請檢查 Ollama 服務是否正在運行")
-        print("   提示：請確認已執行 'ollama serve' 並下載所需模型")
-        return
+    # # 2. 測試 LLM 連線
+    # print("\n2. 測試 LLM 連線...")
+    # if test_llm_connection():
+    #     print("   ✅ LLM 連線測試成功")
+    # else:
+    #     print("   ❌ LLM 連線測試失敗，請檢查 Ollama 服務是否正在運行")
+    #     print("   提示：請確認已執行 'ollama serve' 並下載所需模型")
+    #     return
     
     # 3. 載入 G 類型配方資料
     print("\n" + "=" * 60)
@@ -322,67 +329,49 @@ def main():
         print(f"\n✅ 'G' 類型配方資料載入完成，共找到 {len(g_recipes_master_list)} 筆獨立配方名稱。")
         print("✅ 系統已就緒，可以開始查詢。")
     
-    # 4. 進入查詢迴圈
-    while True:
-        print("-" * 60)
-        try:
-            user_search_term = input("\n➡️ 請輸入您要查詢的配方相關詞彙 (或輸入 'exit'/'quit' 離開): ").strip()
-        except KeyboardInterrupt:
-            print("\n\n使用者中斷程式執行。")
-            break
-        except EOFError:
-            print("\n\n輸入結束，程式即將結束。")
-            break
+    user_search_term = search_name.strip()
+    
+    print(f"\n您輸入的查詢詞是: '{user_search_term}'")
         
-        if not user_search_term:
-            print("⚠️ 您沒有輸入查詢詞彙，請重新輸入。")
-            continue
-        
-        if user_search_term.lower() in ['exit', 'quit', '離開', '結束']:
-            print("\n感謝使用，程式即將結束。")
-            break
-        
-        print(f"\n您輸入的查詢詞是: '{user_search_term}'")
-        
-        # 使用預先載入的 g_recipes_master_list 進行 LLM 查詢
-        related_g_recipes = get_related_materials_with_llm(
-            user_search_term, 
-            g_recipes_master_list
+    # 使用預先載入的 g_recipes_master_list 進行 LLM 查詢
+    related_g_recipes = get_related_materials_with_llm(
+        user_search_term, 
+        g_recipes_master_list
+    )
+    
+    # 顯示查詢結果
+    print("\n--- 查詢結果 ---")
+    if related_g_recipes:
+        # 檢查是否為錯誤訊息
+        is_error_message = (
+            len(related_g_recipes) == 1 and
+            isinstance(related_g_recipes[0], str) and
+            any(keyword in related_g_recipes[0] for keyword in ["錯誤", "失敗", "超時", "連線"])
         )
         
-        # 顯示查詢結果
-        print("\n--- 查詢結果 ---")
-        if related_g_recipes:
-            # 檢查是否為錯誤訊息
-            is_error_message = (
-                len(related_g_recipes) == 1 and
-                isinstance(related_g_recipes[0], str) and
-                any(keyword in related_g_recipes[0] for keyword in ["錯誤", "失敗", "超時", "連線"])
-            )
-            
-            if is_error_message:
-                print(f"❗ 查詢過程中發生問題: {related_g_recipes[0]}")
-            elif not any(related_g_recipes):  # 處理空字串列表的情況
-                print(f"✅ LLM 分析完成，但未在 'G' 類型的配方中找到與 '{user_search_term}' 明確相關的項目。")
-            else:
-                print(f"與 '{user_search_term}' 相關且類型為 'G' 的配方名稱有：")
-                for i, name in enumerate(related_g_recipes, 1):
-                    print(f"{i:2d}. {name}")
-                
-                # 詢問是否要查看詳細資訊
-                if len(related_g_recipes) <= 5:  # 只有在結果不太多時才提供詳細資訊選項
-                    try:
-                        show_details = input(f"\n是否要查看配方的詳細資訊？(y/n): ").strip().lower()
-                        if show_details in ['y', 'yes', '是', '要']:
-                            for recipe_name in related_g_recipes:
-                                display_recipe_details(recipe_name)
-                                print("-" * 40)
-                    except (KeyboardInterrupt, EOFError):
-                        print("\n跳過詳細資訊顯示")
+        if is_error_message:
+            print(f"❗ 查詢過程中發生問題: {related_g_recipes[0]}")
+        elif not any(related_g_recipes):  # 處理空字串列表的情況
+            print(f"✅ LLM 分析完成，但未在 'G' 類型的配方中找到與 '{user_search_term}' 明確相關的項目。")
         else:
-            print(f"未能在 'G' 類型的配方中找到與 '{user_search_term}' 相關的項目。")
+            print(f"與 '{user_search_term}' 相關且類型為 'G' 的配方名稱有：")
+            for i, name in enumerate(related_g_recipes, 1):
+                print(f"{i:2d}. {name}")
+            
+            # # 詢問是否要查看詳細資訊
+            # if len(related_g_recipes) <= 5:  # 只有在結果不太多時才提供詳細資訊選項
+            #     try:
+            #         show_details = input(f"\n是否要查看配方的詳細資訊？(y/n): ").strip().lower()
+            #         if show_details in ['y', 'yes', '是', '要']:
+            #             for recipe_name in related_g_recipes:
+            #                 display_recipe_details(recipe_name)
+            #                 print("-" * 40)
+            #     except (KeyboardInterrupt, EOFError):
+            #         print("\n跳過詳細資訊顯示")
+    else:
+        print(f"未能在 'G' 類型的配方中找到與 '{user_search_term}' 相關的項目。")
     
-    print("\n--- 程式執行完畢 ---")
+    return related_g_recipes
 
 if __name__ == "__main__":
     main()
