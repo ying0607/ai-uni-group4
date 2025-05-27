@@ -223,7 +223,7 @@ class SubmenuController {
 }
 
 // =============================================================================
-// 會員選單功能
+// 會員選單功能 (更新:登出)
 // =============================================================================
 class MemberMenuController {
     constructor() {
@@ -234,7 +234,39 @@ class MemberMenuController {
             memberIcon.addEventListener('click', () => {
                 memberDropdown.classList.toggle('show');
             });
+            
+            // 新增：綁定登出連結點擊事件
+            this.bindLogoutEvent(memberDropdown);
         }
+    }
+    
+    // 新增：登出事件處理
+    bindLogoutEvent(dropdown) {
+        const logoutLink = dropdown.querySelector('a[href="#"]:last-child'); // 找到"登出"連結
+        if (logoutLink && logoutLink.textContent.includes('登出')) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
+        }
+    }
+    
+    // 新增：登出邏輯
+    handleLogout() {
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            }
+        })
+        .catch(error => {
+            console.error('登出錯誤:', error);
+            window.location.href = '/';
+        });
     }
 }
 

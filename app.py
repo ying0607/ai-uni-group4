@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for,session
+from functools import wraps
 from api import api_bp
 from database import operations as db_ops
 import os
@@ -14,6 +15,14 @@ def inject_globals():
         'query': request.args.get('q', '')
     }
 
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # ----- 路由設定 ----
 
 # 登入畫面
@@ -24,6 +33,7 @@ def index():
 
 # 首頁
 @app.route('/homepage')
+@login_required
 def home():
     """首頁路由"""
     request.page_name = 'homepage'
@@ -31,6 +41,7 @@ def home():
 
 # 搜尋頁面
 @app.route('/search')
+@login_required
 def search():
     """搜尋頁面"""
     request.page_name = 'search'
@@ -38,6 +49,7 @@ def search():
 
 # 第一階段搜尋結果
 @app.route('/search/result')
+@login_required
 def search_result():
     """搜尋結果頁面"""
     query = request.args.get('q', '')
@@ -75,6 +87,7 @@ def search_result():
 
 # 最終階段搜尋結果
 @app.route('/search/result/final/<recipe_id>')
+@login_required
 def search_result_final_detail(recipe_id):
     """最終搜尋結果頁面（含配方ID）"""
     request.page_name = 'search'
@@ -84,6 +97,7 @@ def search_result_final_detail(recipe_id):
 
 # AI 聊天機器人
 @app.route('/chatbot')
+@login_required
 def chatbot():
     """聊天機器人頁面"""
     request.page_name = 'chatbot'

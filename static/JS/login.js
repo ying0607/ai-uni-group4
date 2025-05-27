@@ -43,17 +43,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // TODO: 實際的登入驗證邏輯
-        // 模擬登入驗證（示範用）
-        if (username === 'admin' && password === 'admin') {
-            // 登入成功，跳轉到首頁
-            window.location.href = '/homepage';
-        } else {
-            // 登入失敗
-            usernameError.style.display = 'block';
-            passwordError.style.display = 'block';
-            loginErrorMessage.style.display = 'block';
-        }
+        fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                usernameError.style.display = 'block';
+                passwordError.style.display = 'block';
+                loginErrorMessage.style.display = 'block';
+            }
+        });
     });
 
     // Forgot password handler

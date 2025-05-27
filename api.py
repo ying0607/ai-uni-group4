@@ -1,9 +1,28 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from database import operations as db_ops
 from backend.ai.material_search import main as material_search
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
+@api_bp.route('/login', methods=['POST'])
+def login_api():
+    """登入驗證 API"""
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+    
+    if username == 'admin' and password == 'admin123':
+        session['logged_in'] = True
+        session['username'] = username
+        return jsonify({"success": True, "redirect": "/homepage"})
+    else:
+        return jsonify({"success": False, "message": "帳號或密碼錯誤"})
+
+@api_bp.route('/logout', methods=['POST'])
+def logout_api():
+    """登出 API"""
+    session.clear()
+    return jsonify({"success": True, "redirect": "/"})
 
 @api_bp.route('/chat', methods=['POST'])
 def chat_api():
