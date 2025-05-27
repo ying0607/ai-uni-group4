@@ -1,268 +1,81 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>佳實食品_小江解AI配方系统</title>
-    <link rel="icon" href="../static/image/favicon.png" type="image/png">
-    <link rel="stylesheet" href="../static/css/search.css">
-    <link rel="stylesheet" href="../static/css/search-results.css"> 
-    <script src="../static/js/search.js" defer></script>
-    <!--<script src="../static/js/search_result.js" defer></script>-->
-    
+{% extends "base.html" %}
 
-</head>
+{% block title %}佳質食品_小江解AI配方系统 - 搜索結果{% endblock %}
 
-<body>
-    <!--sidebar-->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <!-- 佳質LOGO IMG -->
-            <div class="logo-container">
-                <img src="../static/image/logo-1.png" alt="VALUE!" class="logo" id="logo">
-            </div>
-            <div class="sidebar-icons">
-                <!-- SideBar 搜尋功能 -->
-                <button class="icon-button" id="search-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-                    </svg>
-                </button>
-                <!-- SideBar 縮放功能 -->
-                <button class="icon-button" id="sidebar-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <!-- SideBar 搜尋欄(可收合) -->
-        <div class="sidebar-search" id="sidebar-search-container">
-            <input type="text" class="sidebar-search-input" id="sidebar-search-input" placeholder="Search sidebar...">
-        </div>
-        <!-- Menu 起始-->
-        <div class="sidebar-menu">
-            <!-- 配方查找 -->
-            <div class="menu-item active">
-                <div class="menu-icon">🔍</div>
-                <span class="menu-item-text">配方查找</span>
-            </div>
-            <!-- 小江解 -->
-            <div class="menu-item">
-                <div class="menu-icon">📝</div>
-                <span class="menu-item-text">小江解</span>
-                <div class="menu-icons-right">
-                    <!-- 小江解_新增對話 按鈕-->
-                    <button class="menu-action-icon add-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-                        </svg>
-                    </button>
-                    <!-- 小江解_收合分頁 按鈕 - with chevron arrow -->
-                    <button class="menu-action-icon expand-icon" data-expanded="false">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                            <!-- Chevron right icon -->
-                            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
-                        </svg>
-                    </button>
-                </div>
-                
-            </div>
-            <!-- 小江解 對話紀錄列-->
-            <div class="submenu" id="xiaojiangjie-submenu">
-                <div class="submenu-item">
-                    <span class="submenu-item-text">布丁粉配方調整</span>
-                    <div class="more-actions">⋯
-                        <div class="action-menu">
-                            <div class="action-item" title="重新命名">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-                                </svg>
-                            </div>
-                            <div class="action-item delete" title="刪除">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="submenu-item">
-                    <span class="submenu-item-text">配方改良紀錄</span>
-                    <div class="more-actions">⋯
-                        <div class="action-menu">
-                            <div class="action-item" title="重新命名">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-                                </svg>
-                            </div>
-                            <div class="action-item delete" title="刪除">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="submenu-item">
-                    <span class="submenu-item-text">顧客回饋分析</span>
-                    <div class="more-actions">⋯
-                        <div class="action-menu">
-                            <div class="action-item" title="重新命名">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
-                                </svg>
-                            </div>
-                            <div class="action-item delete" title="刪除">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/search-results.css">
+{% endblock %}
 
-    <div class="main-content">
-        <!-- Nav Bar -->
-        <div class="nav-area" id="nav-area">
-            <div class="nav-left" id="nav-left">
-                <!-- This area will be populated with sidebar toggle and logo when sidebar is collapsed -->
-            </div>
-            <div class="nav-right">
-                <div class="member-dropdown">
-                    <button class="member-icon" id="member-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-                        </svg>
-                    </button>
-                    <div class="dropdown-content" id="member-dropdown">
-                        <a href="#">帳號管理</a>
-                        <a href="#">登出</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="nav-separator"></div>
+{% block content %}
+<!-- 搜尋欄 -->
+{% include 'partials/search_bar.html' %}
 
-        <!-- 搜尋列 -->
-        <div class="main-header">
-            <h1 class="page-title">配方查找</h1>
-        </div>
-
-        <div class="search-section">
-            <div class="search-container">
-                <!--搜尋輸入-->
-                <div class="search-wrapper">
-                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" class="search-input" placeholder="輸入配方關鍵字">
-                </div>
-                <!--進階搜尋按鈕-->
-                <div class="advanced-search-icon tooltip" onclick="openModal()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                    </svg>
-                </div>
-                <!--送出-->
-                <button class="search-button" onclick="performSearch()">搜尋</button>
-            </div>
-        </div>       
+<!-- 搜尋結果 -->
+<div class="content-container">
+    <div class="search-results">
+        <h2 class="results-title">搜索結果</h2>
         
-        <!--貼上區-->
-        <div class="content-container">
-            <div class="search-results">
-                <h2 class="results-title">搜索結果</h2>
-                
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>貨品編號</th>
-                            <th>配方名稱</th>
-                            <th>配方種類</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {% if results %}
-                            {% for result in results %}
-                            <tr>
-                                <td>{{ result.code }}</td>
-                                <td>{{ result.company }}</td>
-                                <td>{{ result.name }}</td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            {% if error %}
-                            <tr>
-                                <td colspan="3" style="text-align: center; color: #f44336;">{{ error }}</td>
-                            </tr>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>貨品編號</th>
+                    <th>配方名稱</th>
+                    <th>配方種類</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if results %}
+                    {% for result in results %}
+                    <tr class="clickable-row" onclick="window.location.href='/search/result/final/{{ result.code }}'">
+                        <td>{{ result.code }}</td>
+                        <td>{{ result.company }}</td>
+                        <td>{{ result.name }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    {% if error %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #f44336;">{{ error }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: #999;">
+                            {% if query %}
+                                找不到與 "{{ query }}" 相關的配方
                             {% else %}
-                            <tr>
-                                <td colspan="3" style="text-align: center; color: #999;">
-                                    {% if query %}
-                                        找不到與 "{{ query }}" 相關的配方
-                                    {% else %}
-                                        沒有配方資料
-                                    {% endif %}
-                                </td>
-                            </tr>
+                                沒有配方資料
                             {% endif %}
-                        {% endif %}
-                    </tbody>
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+    // 設定頁面名稱用於側邊欄高亮
+    window.pageName = 'search';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.results-table tbody tr');
+        rows.forEach(row => {
+            // 檢查這行是否有實際的配方資料（不是錯誤訊息行）
+            if (row.cells.length === 3 && row.cells[0].textContent.trim()) {
+                row.style.cursor = 'pointer';
+                row.classList.add('clickable-row');
                 
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 進階搜尋 -->
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <h2>進階搜尋</h2>
-            
-            <div class="form-group">
-                <label for="productCode">產品編號</label>
-                <input type="text" id="productCode" name="productCode">
-            </div>
-            
-            <div class="form-group">
-                <label for="customerName">客戶名稱</label>
-                <input type="text" id="customerName" name="customerName">
-            </div>
-            
-            <div class="modal-buttons">
-                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-                <button class="btn btn-submit" onclick="submitAdvancedSearch()">搜尋</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const rows = document.querySelectorAll('.results-table tbody tr');
-            rows.forEach(row => {
-                // 檢查這行是否有實際的配方資料（不是錯誤訊息行）
-                if (row.cells.length === 3 && row.cells[0].textContent.trim()) {
-                    row.style.cursor = 'pointer';
-                    row.classList.add('clickable-row');
-                    
-                    row.addEventListener('click', function() {
-                        const recipeId = this.cells[0].textContent.trim(); // 第一欄是配方ID
-                        if (recipeId) {
-                            window.location.href = `/search/result/final/${recipeId}`;
-                        }
-                    });
-                }
-            });
+                row.addEventListener('click', function() {
+                    const recipeId = this.cells[0].textContent.trim(); // 第一欄是配方ID
+                    if (recipeId) {
+                        window.location.href = `/search/result/final/${recipeId}`;
+                    }
+                });
+            }
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+<!-- 進階搜尋彈窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2>進階搜尋</h2>
+        
+        <div class="form-group">
+            <label for="productCode">產品編號</label>
+            <input type="text" id="productCode" name="productCode">
+        </div>
+        
+        <div class="form-group">
+            <label for="customerName">客戶名稱</label>
+            <input type="text" id="customerName" name="customerName">
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-submit" onclick="submitAdvancedSearch()">搜尋</button>
+        </div>
+    </div>
+</div>

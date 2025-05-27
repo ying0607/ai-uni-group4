@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}佳質食品_小江解AI配方系统{% endblock %}</title>
+    <link rel="icon" href="/static/image/favicon.png" type="image/png">
+    
+    <!-- 基礎CSS -->
+    <link rel="stylesheet" href="/static/css/search.css">
+    
+    <!-- 頁面特定CSS -->
+    {% block extra_css %}{% endblock %}
+    
+    <!-- 基礎JS -->
+    <script src="/static/js/search.js" defer></script>
+    
+    <!-- 頁面特定JS -->
+    {% block extra_js %}{% endblock %}
+</head>
+
+<body>
+    <!-- Sidebar -->
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Nav Bar -->
+        {% include 'partials/navbar.html' %}
+        
+        <div class="nav-separator"></div>
+
+        <!-- Page Header -->
+        {% block page_header %}
+        <div class="main-header">
+            <h1 class="page-title">{% block page_title %}配方查找{% endblock %}</h1>
+        </div>
+        {% endblock %}
+
+        <!-- Main Content Area -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Modals -->
+    {% block modals %}
+    {% include 'partials/advanced_search_modal.html' %}
+    {% endblock %}
+
+    <!-- Page specific scripts -->
+    {% block page_scripts %}{% endblock %}
+</body>
+</html>
