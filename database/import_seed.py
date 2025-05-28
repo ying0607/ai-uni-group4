@@ -75,6 +75,9 @@ try:
     # 合併 A 類和 B 類材料到同一個表
     df_materials = pd.concat([df_material_a, df_material_b])
     
+    # 移除多餘的欄位（所有名稱中含 'Unnamed' 的欄位）
+    df_materials = df_materials.loc[:, ~df_materials.columns.str.contains('^Unnamed')]
+
     # 寫入 materials 表
     df_materials.to_sql(f'{GROUP_PREFIX}materials', con=engine, if_exists='append', index=False)
     print(f"成功寫入 {len(df_materials)} 筆材料資料")

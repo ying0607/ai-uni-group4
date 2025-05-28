@@ -1,11 +1,4 @@
-{% endblock %}
-
-{% block page_scripts %}
-<script>
-    // 設定頁面名稱用於側邊欄高亮
-    window.pageName = 'search';
-</script>
-{% endblock %}{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}佳質食品_小江解AI配方系统 - 配方詳細資料{% endblock %}
 
@@ -66,8 +59,8 @@
         <div class="notice-section">
             <div class="notice-title">📋 注意事項</div>
             <div class="notice-content">
-                <ul>
-                    <li><!-- js新增 --></li>
+                <ul id="notices-list">
+                    <!-- JavaScript 將在此處自動添加注意事項 -->
                 </ul>
             </div>
         </div>
@@ -98,3 +91,6 @@
         <button class="close-btn" onclick="closeDetailPanel()">關閉</button>
     </div>
 </div>
+
+
+{% endblock %}

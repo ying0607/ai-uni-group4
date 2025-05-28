@@ -378,4 +378,5 @@ def main(search_name):
     return related_g_recipes
 
 if __name__ == "__main__":
-    main()
+    main("咖啡")
+

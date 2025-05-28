@@ -1,9 +1,28 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from database import operations as db_ops
 from backend.ai.material_search import main as material_search
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
+@api_bp.route('/login', methods=['POST'])
+def login_api():
+    """登入驗證 API"""
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+    
+    if username == 'admin' and password == 'admin123':
+        session['logged_in'] = True
+        session['username'] = username
+        return jsonify({"success": True, "redirect": "/homepage"})
+    else:
+        return jsonify({"success": False, "message": "帳號或密碼錯誤"})
+
+@api_bp.route('/logout', methods=['POST'])
+def logout_api():
+    """登出 API"""
+    session.clear()
+    return jsonify({"success": True, "redirect": "/"})
 
 @api_bp.route('/chat', methods=['POST'])
 def chat_api():
@@ -39,7 +58,6 @@ def api_search():
             })
             
     return jsonify({"results": results, "keyword": keyword})
-
 
 @api_bp.route('/recipe/<recipe_id>')
 def get_recipe_detail(recipe_id):
@@ -91,6 +109,8 @@ def get_recipe_detail(recipe_id):
 
         ingredients = []
         total_cost = 0
+        # 🔥 收集注意事項
+        all_precaution = []
 
         for _, step in steps_df.iterrows():
             material_code = step.get('material_code', '')
@@ -105,6 +125,10 @@ def get_recipe_detail(recipe_id):
                     if sub_recipe:
                         material_name = sub_recipe.get('recipe_name', material_name)
                         is_sub_recipe = True
+                        # 🔥 收集半成品的注意事項
+                        sub_recipe_notes = sub_recipe.get('notes', '')
+                        if sub_recipe_notes and sub_recipe_notes.strip():
+                            all_precaution.append(f"【{material_name}】{sub_recipe_notes.strip()}")
                     unit_price = f_average_unit_price
                     characteristic = '此為半成品配方'
                 else:
@@ -124,6 +148,11 @@ def get_recipe_detail(recipe_id):
             except (ValueError, TypeError):
                 cost = 0
 
+            # 🔥 收集當前步驟的注意事項
+            step_precaution = step.get('precaution', '')
+            if step_precaution and step_precaution.strip():
+                all_precaution.append(step_precaution.strip())
+
             ingredients.append({
                 "step_order": step.get('step_order', ''),
                 "material_code": material_code,
@@ -132,11 +161,17 @@ def get_recipe_detail(recipe_id):
                 "quantity": quantity,
                 "product_base": step.get('product_base', ''),
                 "notes": step.get('notes', ''),
+                "precaution": step.get('precaution', ''),
                 "unit_price": unit_price,
                 "cost": round(cost, 2),
                 "characteristic": characteristic,
                 "is_sub_recipe": is_sub_recipe
             })
+
+        # 🔥 加入主配方的注意事項
+        main_recipe_notes = recipe.get('notes', '')
+        if main_recipe_notes and main_recipe_notes.strip():
+            all_precaution.insert(0, f"【主配方】{main_recipe_notes.strip()}")
 
         response_data = {
             "recipe_details": {
@@ -149,7 +184,9 @@ def get_recipe_detail(recipe_id):
                 "created_at": recipe.get('created_at', '').strftime('%Y-%m-%d') if recipe.get('created_at') else ''
             },
             "ingredients": ingredients,
-            "total_cost": round(total_cost, 2)
+            "total_cost": round(total_cost, 2),
+            # 🔥 新增注意事項列表
+            "precaution": all_precaution
         }
 
         return jsonify(response_data)

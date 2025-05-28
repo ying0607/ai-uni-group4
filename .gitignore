@@ -178,5 +178,4 @@ cython_debug/
 
 # Database files
 database/seeds
-
 folder_structure*

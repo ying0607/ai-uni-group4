@@ -69,7 +69,7 @@ def get_recipe_steps(recipe_id):
     # 修改查詢，為相同名稱的欄位添加別名，避免欄位名稱衝突
     query = text(f"""
         SELECT s.step_id, s.recipe_id, s.step_order, s.material_code, 
-               s.unit, s.quantity, s.product_base, s.notes,
+               s.unit, s.quantity, s.product_base, s.notes, s.precaution,
                m.material_name, m.material_type, m.specification as material_spec
         FROM {GROUP_PREFIX}recipe_step s
         LEFT JOIN {GROUP_PREFIX}materials m ON s.material_code = m.material_code

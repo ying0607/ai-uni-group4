@@ -91,10 +91,12 @@ body {
     align-items: center;
     padding: 5px 10px;
     cursor: pointer;
+    user-select: none;
     color: #333;
     position: relative;
     border-radius: 30px;
     margin: 10px 15px 10px  10px ;
+    transition: background-color 0.3s ease, border-left 0.3s ease;
 }
 
 .menu-item:hover {
@@ -104,6 +106,7 @@ body {
 .menu-item.active {
     background-color: #e0e0e0;
     font-weight: bold;
+    border-left: 4px solid #ceeadd;
 }
 
 /*新增 【Font-Size】*/
@@ -157,6 +160,8 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 4px;
+    position: relative;
+    z-index: 2;
 }
 
 .menu-action-icon:hover {

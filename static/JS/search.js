@@ -30,6 +30,8 @@ class SidebarController {
         this.navLeft = safeGetElement('nav-left');
         this.logo = safeGetElement('logo');
         this.init();
+        this.initMenuNavigation();
+        this.markCurrentPage();
     }
 
     init() {
@@ -52,6 +54,53 @@ class SidebarController {
                     searchInput.focus();
                 }
             });
+        }
+    }
+
+    initMenuNavigation() {
+        // 配方查找項目
+        const searchMenuItem = document.querySelector('.menu-item:first-child');
+        if (searchMenuItem) {
+            searchMenuItem.addEventListener('click', () => {
+                window.location.href = '/search';
+            });
+            searchMenuItem.style.cursor = 'pointer';
+        }
+
+        // 小江解項目
+        const chatbotMenuItem = document.querySelector('.menu-item:nth-child(2)');
+        if (chatbotMenuItem) {
+            // 點擊菜單項目本身時跳轉到聊天頁面
+            chatbotMenuItem.addEventListener('click', (e) => {
+                // 確保不是點擊到按鈕
+                if (!e.target.closest('.menu-action-icon')) {
+                    window.location.href = '/chatbot';
+                }
+            });
+            chatbotMenuItem.style.cursor = 'pointer';
+        }
+    }
+
+    markCurrentPage() {
+        // 獲取當前頁面路徑
+        const currentPath = window.location.pathname;
+        
+        // 移除所有 active class
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // 根據當前路徑標記對應的選單項目
+        if (currentPath.includes('/search')) {
+            const searchMenuItem = document.querySelector('.menu-item:first-child');
+            if (searchMenuItem) {
+                searchMenuItem.classList.add('active');
+            }
+        } else if (currentPath.includes('/chatbot')) {
+            const chatbotMenuItem = document.querySelector('.menu-item:nth-child(2)');
+            if (chatbotMenuItem) {
+                chatbotMenuItem.classList.add('active');
+            }
         }
     }
 
@@ -223,7 +272,7 @@ class SubmenuController {
 }
 
 // =============================================================================
-// 會員選單功能
+// 會員選單功能 (更新:登出)
 // =============================================================================
 class MemberMenuController {
     constructor() {
@@ -234,7 +283,39 @@ class MemberMenuController {
             memberIcon.addEventListener('click', () => {
                 memberDropdown.classList.toggle('show');
             });
+            
+            // 新增：綁定登出連結點擊事件
+            this.bindLogoutEvent(memberDropdown);
         }
+    }
+    
+    // 新增：登出事件處理
+    bindLogoutEvent(dropdown) {
+        const logoutLink = dropdown.querySelector('a[href="#"]:last-child'); // 找到"登出"連結
+        if (logoutLink && logoutLink.textContent.includes('登出')) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
+        }
+    }
+    
+    // 新增：登出邏輯
+    handleLogout() {
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            }
+        })
+        .catch(error => {
+            console.error('登出錯誤:', error);
+            window.location.href = '/';
+        });
     }
 }
 
