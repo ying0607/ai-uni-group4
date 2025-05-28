@@ -49,7 +49,7 @@ def search_result():
             results_df = db_ops.search_recipes(query)
         else:
             # 如果沒有關鍵字，顯示所有配方
-            results_df = get_all_recipes()
+            results_df = db_ops.get_all_recipes()
         
         # 轉換DataFrame為字典列表，只取需要的欄位
         results = []

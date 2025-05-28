@@ -49,7 +49,7 @@ def _init_llm(output_callback=_default_output_callback):
             return None
 
 # 預設初始化一次供全域功能使用
-llm = _init_llm()
+# llm = _init_llm()
 
 def load_g_recipes_from_database() -> Optional[List[str]]:
     """
@@ -148,6 +148,8 @@ def get_related_materials_with_llm(search_term: str, g_recipe_names_list: List[s
     Returns:
         相關配方名稱列表
     """
+    llm = _init_llm()  # 確保 LLM 已初始化
+    
     if not g_recipe_names_list:
         return ["沒有 'G' 類型的配方名稱可供查詢。"]
     
@@ -264,6 +266,8 @@ def test_llm_connection() -> bool:
     Returns:
         True 如果連線正常，False 否則
     """
+    llm = _init_llm()  # 確保 LLM 已初始化
+    
     if llm is None:
         return False
     
