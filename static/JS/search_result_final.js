@@ -90,6 +90,7 @@ class IngredientsTableController {
             'version': recipeDetails.version || 'N/A',
             'standard-hours': recipeDetails.standard_hours || 'N/A',
             'specification': recipeDetails.specification || 'N/A',
+            'precaution': recipeDetails.specification || 'N/A',
             'document-note': recipeDetails.notes || 'N/A',
             'create-date': recipeDetails.created_at || 'N/A'
         };
