@@ -10,7 +10,7 @@ import sys
 import re
 from typing import List, Optional
 from dotenv import load_dotenv
-from langchain_ollama.llms import OllamaLLM  # type: ignore
+from langchain.llms import OllamaLLM 
 
 # 將專案根目錄加入到 PYTHONPATH
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
