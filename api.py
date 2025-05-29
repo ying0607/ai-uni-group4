@@ -70,89 +70,128 @@ def get_recipe_detail(recipe_id):
         steps_df = db_ops.get_recipe_steps(recipe_id)
 
         def calculate_sub_recipe_cost(recipe_id):
+            """計算半成品配方的總成本 - 改進版"""
             try:
-                sub_steps_df = db_ops.get_recipe_steps(recipe_id)
+                print(f"計算半成品 {recipe_id} 的成本...")
+                
+                sub_steps_df =  db_ops.get_recipe_steps(recipe_id)
+                if sub_steps_df.empty:
+                    print(f"半成品 {recipe_id} 沒有配方步驟")
+                    return 0
+                
                 sub_total_cost = 0
+                
                 for _, sub_step in sub_steps_df.iterrows():
                     sub_material_code = sub_step.get('material_code', '')
-                    if sub_material_code and not sub_material_code.startswith('F'):
-                        material_info = db_ops.get_material_by_code(sub_material_code)
-                        if material_info:
-                            sub_unit_price = material_info.get('unit_price_wo_tax', 0) or 0
-                            sub_quantity = sub_step.get('quantity', 0) or 0
-                            try:
-                                sub_unit_price = float(sub_unit_price)
-                                sub_quantity = float(sub_quantity)
-                                sub_total_cost += sub_unit_price * sub_quantity
-                            except (ValueError, TypeError):
-                                pass
+                    sub_quantity = sub_step.get('quantity', 0)
+                    
+                    # 嚴格的數值驗證
+                    try:
+                        sub_quantity = float(sub_quantity) if sub_quantity and str(sub_quantity).lower() != 'nan' else 0
+                    except (ValueError, TypeError):
+                        sub_quantity = 0
+                        
+                    if sub_quantity <= 0:
+                        continue
+                        
+                    if sub_material_code:
+                        if sub_material_code.startswith('F'):
+                            # 遞迴計算F配方成本 (需要設定遞迴深度限制)
+                            sub_recipe_cost = calculate_sub_recipe_cost(sub_material_code)
+                            sub_total_cost += sub_recipe_cost * sub_quantity
+                            print(f"  F配方 {sub_material_code}: 成本 {sub_recipe_cost}, 用量 {sub_quantity}, 小計 {sub_recipe_cost * sub_quantity}")
+                        else:
+                            # 一般材料
+                            material_info =  db_ops.get_material_by_code(sub_material_code)
+                            if material_info:
+                                sub_unit_price = material_info.get('unit_price_wo_tax', 0) or 0
+                                try:
+                                    sub_unit_price = float(sub_unit_price) if sub_unit_price and str(sub_unit_price).lower() != 'nan' else 0
+                                except (ValueError, TypeError):
+                                    sub_unit_price = 0
+                                    
+                                item_cost = sub_unit_price * sub_quantity
+                                sub_total_cost += item_cost
+                                print(f"  一般材料 {sub_material_code}: 單價 {sub_unit_price}, 用量 {sub_quantity}, 小計 {item_cost}")
+                
+                print(f"半成品 {recipe_id} 總成本: {sub_total_cost}")
                 return sub_total_cost
+                
             except Exception as e:
                 print(f"計算半成品 {recipe_id} 成本時發生錯誤: {e}")
                 return 0
 
-        f_ingredients_total_cost = 0
-        f_ingredients_total_quantity = 0
-        for _, step in steps_df.iterrows():
-            material_code = step.get('material_code', '')
-            if material_code and material_code.startswith('F'):
-                sub_recipe_cost = calculate_sub_recipe_cost(material_code)
-                quantity = step.get('quantity', 0) or 0
-                try:
-                    quantity = float(quantity)
-                    f_ingredients_total_cost += sub_recipe_cost * quantity
-                    f_ingredients_total_quantity += quantity
-                except (ValueError, TypeError):
-                    pass
-
-        f_average_unit_price = f_ingredients_total_cost / f_ingredients_total_quantity if f_ingredients_total_quantity > 0 else 0
-
+        # 處理步驟資料
         ingredients = []
         total_cost = 0
-        # 🔥 收集注意事項
-        all_precaution = []
-
+        
         for _, step in steps_df.iterrows():
             material_code = step.get('material_code', '')
+            material_name = step.get('material_name', '')
+            quantity = step.get('quantity', 0)
             unit_price = 0
             characteristic = ''
-            material_name = step.get('material_name', '')
             is_sub_recipe = False
+            
+            # 嚴格的數量驗證
+            try:
+                quantity = float(quantity) if quantity and str(quantity).lower() != 'nan' else 0
+            except (ValueError, TypeError):
+                quantity = 0
 
             if material_code:
                 if material_code.startswith('F'):
+                    # F開頭的是半成品配方
                     sub_recipe = db_ops.get_recipe_by_id(material_code)
                     if sub_recipe:
                         material_name = sub_recipe.get('recipe_name', material_name)
                         is_sub_recipe = True
-                        # 🔥 收集半成品的注意事項
-                        sub_recipe_notes = sub_recipe.get('notes', '')
-                        if sub_recipe_notes and sub_recipe_notes.strip():
-                            all_precaution.append(f"【{material_name}】{sub_recipe_notes.strip()}")
-                    unit_price = f_average_unit_price
-                    characteristic = '此為半成品配方'
+                        
+                        # 計算該半成品的單位成本
+                        if quantity > 0:
+                            sub_recipe_total_cost = calculate_sub_recipe_cost(material_code)
+                            unit_price = sub_recipe_total_cost  # F配方的"單價"就是其總成本
+                        else:
+                            unit_price = 0
+                            
+                        characteristic = '此為半成品配方'
+                        print(f"半成品 {material_code}: 總成本 {unit_price}, 用量 {quantity}")
+
+                elif material_code.startswith('G'):
+                    # G開頭的是成品配方 (通常不會在配方中出現，但以防萬一)
+                    sub_recipe = db_ops.get_recipe_by_id(material_code)
+                    if sub_recipe:
+                        material_name = sub_recipe.get('recipe_name', material_name)
+                        is_sub_recipe = True
+                        characteristic = '此為成品配方'
+                        unit_price = 0  # G配方通常不計入成本
                 else:
+                    # 一般材料處理
                     material_info = db_ops.get_material_by_code(material_code)
                     if material_info:
                         unit_price = material_info.get('unit_price_wo_tax', 0) or 0
                         characteristic = material_info.get('characteristic', '') or ''
-
-            quantity = step.get('quantity', 0) or 0
+                        
+                        # 嚴格的單價驗證
+                        try:
+                            unit_price = float(unit_price) if unit_price and str(unit_price).lower() != 'nan' else 0
+                        except (ValueError, TypeError):
+                            unit_price = 0
+            
+            # 成本計算
             try:
-                unit_price = float(unit_price) if unit_price and str(unit_price).lower() != 'nan' else 0
-                quantity = float(quantity) if quantity and str(quantity).lower() != 'nan' else 0
-                cost = unit_price * quantity if not (unit_price == 0 and quantity == 0) else 0
+                cost = unit_price * quantity if unit_price > 0 and quantity > 0 else 0
+                
+                # 確保不是 NaN
                 if str(cost).lower() == 'nan' or cost != cost:
                     cost = 0
+                    
                 total_cost += cost
+                print(f"項目 {material_code}: 單價 {unit_price}, 用量 {quantity}, 成本 {cost}")
+                
             except (ValueError, TypeError):
                 cost = 0
-
-            # 🔥 收集當前步驟的注意事項
-            step_precaution = step.get('precaution', '')
-            if step_precaution and step_precaution.strip():
-                all_precaution.append(step_precaution.strip())
-
+            
             ingredients.append({
                 "step_order": step.get('step_order', ''),
                 "material_code": material_code,
@@ -161,18 +200,65 @@ def get_recipe_detail(recipe_id):
                 "quantity": quantity,
                 "product_base": step.get('product_base', ''),
                 "notes": step.get('notes', ''),
-                "precaution": step.get('precaution', ''),
                 "unit_price": unit_price,
                 "cost": round(cost, 2),
                 "characteristic": characteristic,
                 "is_sub_recipe": is_sub_recipe
             })
+        
+        print(f"配方 {recipe_id} 總成本: {total_cost}")
+        
+        # 處理注意事項 - 過濾空值和重複內容（修正版）
+        print(f"\n=== 🔍 開始處理配方 {recipe_id} 的注意事項 ===")
+        print(f"steps_df 基本資訊:")
+        print(f"   - 資料筆數: {len(steps_df)}")
+        print(f"   - 是否包含 precaution 欄位: {'precaution' in steps_df.columns}")
 
-        # 🔥 加入主配方的注意事項
-        main_recipe_notes = recipe.get('notes', '')
-        if main_recipe_notes and main_recipe_notes.strip():
-            all_precaution.insert(0, f"【主配方】{main_recipe_notes.strip()}")
+        notices = []
+        precaution_raw_data = []
 
+        # 修正：確保能看到所有步驟的處理過程
+        for index, step in steps_df.iterrows():
+            precaution = step.get('precaution', '')
+            material_code = step.get('material_code', '')
+            material_name = step.get('material_name', '')
+            
+            # 記錄每一步的原始資料
+            precaution_raw_data.append({
+                'step': len(precaution_raw_data) + 1,  # 使用序號而非 index
+                'material_code': material_code,
+                'material_name': material_name,
+                'precaution_raw': repr(precaution),
+                'precaution_type': type(precaution).__name__
+            })
+            
+            print(f"步驟 {len(precaution_raw_data)} - {material_code}: 原始注意事項 = {repr(precaution)} (類型: {type(precaution).__name__})")
+            
+            if precaution and str(precaution).strip() and str(precaution).lower() != 'nan':
+                precaution_clean = str(precaution).strip()
+                print(f"  ✅ 有效注意事項: '{precaution_clean}'")
+                
+                if precaution_clean not in notices:
+                    notices.append(precaution_clean)
+                    print(f"  ➕ 新增到列表 (目前共 {len(notices)} 項)")
+                else:
+                    print(f"  ⚠️  重複內容，已跳過")
+            else:
+                print(f"  ❌ 無效注意事項 (空值、null 或 NaN)")
+
+        print(f"\n📊 注意事項處理結果:")
+        print(f"   - 總步驟數: {len(steps_df)}")
+        print(f"   - 有效注意事項數量: {len(notices)}")
+        print(f"   - 最終注意事項列表: {notices}")
+
+        # ✅ 修正：顯示所有原始資料
+        print(f"\n📋 原始資料詳細報告:")
+        for item in precaution_raw_data:
+            print(f"   步驟 {item['step']}: {item['material_code']} | 類型: {item['precaution_type']} | 值: {item['precaution_raw']}")
+
+        print(f"=== 注意事項處理完成 ===\n")
+        
+        # 組裝回應資料
         response_data = {
             "recipe_details": {
                 "recipe_id": recipe.get('recipe_id', ''),
@@ -185,11 +271,14 @@ def get_recipe_detail(recipe_id):
             },
             "ingredients": ingredients,
             "total_cost": round(total_cost, 2),
-            # 🔥 新增注意事項列表
-            "precaution": all_precaution
+            "notices": notices  # 新增這行
+            
         }
-
+        print(f"🚀 API 回應資料中的 notices: {response_data.get('notices', 'NOT_FOUND')}")
         return jsonify(response_data)
-
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"取得配方詳細資料時發生錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500   
