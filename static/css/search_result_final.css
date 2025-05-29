@@ -250,3 +250,40 @@
     display: table;
     clear: both;
 }
+
+/* 詳細面板中的注意事項區塊樣式 */
+#detail-precautions {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ffc107;
+}
+
+#detail-precautions h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #856404;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 8px;
+}
+
+#detail-precaution-content {
+    color: #333;
+    line-height: 1.6;
+}
+
+#detail-precaution-content p {
+    margin: 8px 0;
+    padding: 8px;
+    background: #fff3cd;
+    border-left: 3px solid #ffc107;
+    border-radius: 3px;
+    word-wrap: break-word;
+}
+
+#detail-precaution-content p:last-child {
+    margin-bottom: 0;
+}

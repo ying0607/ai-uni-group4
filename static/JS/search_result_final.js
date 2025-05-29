@@ -72,9 +72,12 @@ class IngredientsTableController {
                 return response.json();
             })
             .then(data => {
+                console.log('API 返回的完整資料:', data); // 除錯用
                 this.updateRecipeDetails(data.recipe_details);
                 this.addDataRows(data.ingredients);
                 this.updateTotalCost(data.total_cost);
+                this.precautionData = data.precaution || [];
+                console.log('儲存的注意事項資料:', this.precautionData);
             })
             .catch(error => {
                 console.error('Error loading recipe data:', error);

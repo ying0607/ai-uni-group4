@@ -221,6 +221,7 @@ def get_recipes_with_filtered_materials(material_type=None, supplier_id=None):
     
     df = pd.read_sql(query, engine, params=params)
     return df
+
 def get_recipe_details_by_name(recipe_name: str):
     """根據配方名稱取得配方詳細資訊"""
     try:
