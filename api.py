@@ -121,7 +121,7 @@ def get_recipe_detail(recipe_id):
                 print(f"計算半成品 {recipe_id} 成本時發生錯誤: {e}")
                 return 0
 
-     # 處理步驟資料
+        # 處理步驟資料
         ingredients = []
         total_cost = 0
         
@@ -208,6 +208,56 @@ def get_recipe_detail(recipe_id):
         
         print(f"配方 {recipe_id} 總成本: {total_cost}")
         
+        # 處理注意事項 - 過濾空值和重複內容（修正版）
+        print(f"\n=== 🔍 開始處理配方 {recipe_id} 的注意事項 ===")
+        print(f"steps_df 基本資訊:")
+        print(f"   - 資料筆數: {len(steps_df)}")
+        print(f"   - 是否包含 precaution 欄位: {'precaution' in steps_df.columns}")
+
+        notices = []
+        precaution_raw_data = []
+
+        # 修正：確保能看到所有步驟的處理過程
+        for index, step in steps_df.iterrows():
+            precaution = step.get('precaution', '')
+            material_code = step.get('material_code', '')
+            material_name = step.get('material_name', '')
+            
+            # 記錄每一步的原始資料
+            precaution_raw_data.append({
+                'step': len(precaution_raw_data) + 1,  # 使用序號而非 index
+                'material_code': material_code,
+                'material_name': material_name,
+                'precaution_raw': repr(precaution),
+                'precaution_type': type(precaution).__name__
+            })
+            
+            print(f"步驟 {len(precaution_raw_data)} - {material_code}: 原始注意事項 = {repr(precaution)} (類型: {type(precaution).__name__})")
+            
+            if precaution and str(precaution).strip() and str(precaution).lower() != 'nan':
+                precaution_clean = str(precaution).strip()
+                print(f"  ✅ 有效注意事項: '{precaution_clean}'")
+                
+                if precaution_clean not in notices:
+                    notices.append(precaution_clean)
+                    print(f"  ➕ 新增到列表 (目前共 {len(notices)} 項)")
+                else:
+                    print(f"  ⚠️  重複內容，已跳過")
+            else:
+                print(f"  ❌ 無效注意事項 (空值、null 或 NaN)")
+
+        print(f"\n📊 注意事項處理結果:")
+        print(f"   - 總步驟數: {len(steps_df)}")
+        print(f"   - 有效注意事項數量: {len(notices)}")
+        print(f"   - 最終注意事項列表: {notices}")
+
+        # ✅ 修正：顯示所有原始資料
+        print(f"\n📋 原始資料詳細報告:")
+        for item in precaution_raw_data:
+            print(f"   步驟 {item['step']}: {item['material_code']} | 類型: {item['precaution_type']} | 值: {item['precaution_raw']}")
+
+        print(f"=== 注意事項處理完成 ===\n")
+        
         # 組裝回應資料
         response_data = {
             "recipe_details": {
@@ -220,9 +270,11 @@ def get_recipe_detail(recipe_id):
                 "created_at": recipe.get('created_at', '').strftime('%Y-%m-%d') if recipe.get('created_at') else ''
             },
             "ingredients": ingredients,
-            "total_cost": round(total_cost, 2)
+            "total_cost": round(total_cost, 2),
+            "notices": notices  # 新增這行
+            
         }
-        
+        print(f"🚀 API 回應資料中的 notices: {response_data.get('notices', 'NOT_FOUND')}")
         return jsonify(response_data)
         
     except Exception as e:

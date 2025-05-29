@@ -42,16 +42,16 @@ class IngredientsTableController {
 
     // 初始化點擊事件
     initClickEvents() {
-    this.tbody.addEventListener('click', (e) => {
-        const row = e.target.closest('tr');
-        if (row && !row.classList.contains('sub-recipe-row')) {  // 🔥 排除半成品行
-            const materialCode = row.getAttribute('data-material-code');
-            if (materialCode) {
-                this.showDetailPanel(materialCode, row);
+        this.tbody.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            if (row && !row.classList.contains('sub-recipe-row')) {  // 🔥 排除半成品行
+                const materialCode = row.getAttribute('data-material-code');
+                if (materialCode) {
+                    this.showDetailPanel(materialCode, row);
+                }
             }
-        }
-    });
-}
+        });
+    }
 
     // 處理後端資料
     loadRecipeData(recipeId) {
@@ -66,18 +66,25 @@ class IngredientsTableController {
         // 從後端獲取配方詳細資料
         fetch(`/api/recipe/${recipeId}`)
             .then(response => {
+                console.log('🌐 API 回應狀態:', response.status, response.statusText);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
+                console.log('📦 收到的完整資料:', data);
+                console.log('📋 注意事項資料:', data.notices);
+                console.log('📋 注意事項類型:', typeof data.notices);
+                console.log('📋 注意事項長度:', data.notices ? data.notices.length : 'undefined');
+                
                 this.updateRecipeDetails(data.recipe_details);
                 this.addDataRows(data.ingredients);
                 this.updateTotalCost(data.total_cost);
+                this.updateNotices(data.notices); // ← 新增這行
             })
             .catch(error => {
-                console.error('Error loading recipe data:', error);
+                console.error('❌ Error loading recipe data:', error);
                 this.showError('載入配方資料時發生錯誤: ' + error.message);
             });
     }
@@ -109,6 +116,50 @@ class IngredientsTableController {
         if (totalElement) {
             totalElement.textContent = `$${totalCost.toFixed(2)}`;
         }
+    }
+
+    //更新注意事項(含除錯)
+    updateNotices(notices) {
+        console.log('\n🔧 === updateNotices 函數開始 ===');
+        console.log('傳入的 notices 參數:', notices);
+        console.log('notices 類型:', typeof notices);
+        console.log('notices 是否為陣列:', Array.isArray(notices));
+        
+        const noticesList = document.getElementById('notices-list');
+        console.log('找到 notices-list 元素:', !!noticesList);
+        
+        if (!noticesList) {
+            console.error('❌ 找不到 notices-list 元素！');
+            return;
+        }
+        
+        if (notices && Array.isArray(notices) && notices.length > 0) {
+            console.log(`✅ 有 ${notices.length} 項注意事項需要顯示`);
+            notices.forEach((notice, index) => {
+                console.log(`  ${index + 1}. "${notice}"`);
+            });
+            
+            const htmlContent = notices
+                .map((notice, index) => {
+                    // 將 \n 轉換為 <br> 標籤
+                    const formattedNotice = notice.replace(/\n/g, '<br>');
+                    console.log(`生成 HTML 項目 ${index + 1}:`, formattedNotice);
+                    return `<li>${formattedNotice}</li>`;
+                })
+                .join('');
+                
+            console.log('生成的 HTML 內容:', htmlContent);
+            noticesList.innerHTML = htmlContent;
+            console.log('✅ 注意事項 HTML 已更新');
+            
+        } else {
+            console.log('⚠️  沒有有效的注意事項，顯示預設訊息');
+            noticesList.innerHTML = '<li>無特殊注意事項</li>';
+        }
+        
+        // 驗證最終結果
+        console.log('最終 notices-list 內容:', noticesList.innerHTML);
+        console.log('🔧 === updateNotices 函數結束 ===\n');
     }
 
     // 顯示載入狀態
@@ -152,12 +203,12 @@ class IngredientsTableController {
         row.setAttribute('data-material-code', item.material_code || '');
         row.classList.add('clickable-row');
         
-        // 🔥 如果是半成品，添加特殊標記和點擊處理
+        //如果是半成品，添加特殊標記和點擊處理
         if (item.is_sub_recipe) {
             row.classList.add('sub-recipe-row');
             row.setAttribute('data-sub-recipe', item.material_code);
             
-            // 🔥 為半成品行添加特殊點擊事件
+            //為半成品行添加特殊點擊事件
             row.addEventListener('click', (e) => {
                 e.stopPropagation(); // 防止觸發一般的詳細面板
                 window.location.href = `/search/result/final/${item.material_code}`;
@@ -251,26 +302,26 @@ class IngredientsTableController {
         
         // 🔥 更新原料特性
         const characteristicElement = document.getElementById('more-info');
-            if (characteristicElement) {
-                const characteristic = itemData.characteristic || '暫無特性資料';
-                characteristicElement.textContent = characteristic;
+        if (characteristicElement) {
+            const characteristic = itemData.characteristic || '暫無特性資料';
+            characteristicElement.textContent = characteristic;
 
-                const keywords = ['標示', '過敏原', '特性','甜度', '顆粒', '溶解性', '食品添加物'];
-                let formattedText = characteristic;
+            const keywords = ['標示', '過敏原', '特性','甜度', '顆粒', '溶解性', '食品添加物'];
+            let formattedText = characteristic;
 
-                keywords.forEach(keyword => {
-                    const regex = new RegExp(`(${keyword}[:：]\\s*)`, 'g');
-                    formattedText = formattedText.replace(regex, '<br>$1');
-                });
+            keywords.forEach(keyword => {
+                const regex = new RegExp(`(${keyword}[:：]\\s*)`, 'g');
+                formattedText = formattedText.replace(regex, '<br>$1');
+            });
 
-                formattedText = formattedText
-                    .replace(/^<br>/, '')  // 移除開頭換行
-                    .replace(/<br>\s*<br>/g, '<br>')  // 移除重複換行
-                    .trim();
+            formattedText = formattedText
+                .replace(/^<br>/, '')  // 移除開頭換行
+                .replace(/<br>\s*<br>/g, '<br>')  // 移除重複換行
+                .trim();
 
-                characteristicElement.innerHTML = formattedText;
-            } else {
-                console.warn('找不到 detail-characteristic 元素');
+            characteristicElement.innerHTML = formattedText;
+        } else {
+            console.warn('找不到 detail-characteristic 元素');
         }
         
         // 顯示面板
@@ -393,6 +444,23 @@ function setupOverlayClick() {
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // HTML 元素檢查
+    console.log('🔍 === HTML 元素檢查 ===');
+    const noticesSection = document.querySelector('.notice-section');
+    const noticesTitle = document.querySelector('.notice-title');
+    const noticesContent = document.querySelector('.notice-content');
+    const noticesList = document.getElementById('notices-list');
+    
+    console.log('notice-section 存在:', !!noticesSection);
+    console.log('notice-title 存在:', !!noticesTitle);
+    console.log('notice-content 存在:', !!noticesContent);
+    console.log('notices-list 存在:', !!noticesList);
+    
+    if (noticesList) {
+        console.log('notices-list 當前內容:', noticesList.innerHTML);
+    }
+    console.log('=== HTML 元素檢查完成 ===\n');
+    
     // 初始化配方表格控制器
     window.ingredientsController = new IngredientsTableController('.ingredients-table');
     
@@ -401,9 +469,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 獲取配方 ID 並載入真實資料
     const recipeId = getRecipeIdFromUrl();
+    console.log('🆔 從 URL 取得的配方 ID:', recipeId);
+    
     if (recipeId) {
+        console.log('🚀 開始載入配方資料...');
         window.ingredientsController.loadRecipeData(recipeId);
     } else {
-        console.warn('No recipe ID found in URL');
+        console.warn('⚠️  No recipe ID found in URL');
     }
 });
